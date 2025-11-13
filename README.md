@@ -24,29 +24,55 @@
 
 ## ⚡ Início Rápido
 
-**Você terá o sistema rodando em 2 minutos!**
+**Você terá o sistema rodando em 2 MINUTOS!** ⏱️
 
-### Windows (Mais fácil 🎯)
+### 🎯 Forma Mais Fácil: Instalador Automático Windows
+
+Se **não tem Python instalado**, duplo clique aqui:
+```
+👉 instalar_python.bat
+```
+
+Ele faz tudo automaticamente:
+1. ✅ Verifica se Python está instalado
+2. ✅ Se não estiver, baixa e instala (1 clique)
+3. ✅ Instala as dependências
+4. ✅ Inicia a aplicação
+
+**100% automatizado!** Nenhuma configuração necessária.
+
+---
+
+### ✅ Se Python Já Está Instalado
+
+**Windows:**
 ```bash
-# Abrir CMD ou PowerShell e executar:
+# Duplo clique ou execute no CMD:
 executar_app.bat
 ```
-Pronto! Abre automaticamente em **http://localhost:8501**
 
-### Mac/Linux ou instalação manual
+**Mac/Linux:**
 ```bash
-# 1. Clonar repositório (ver seção abaixo)
-git clone https://github.com/marcosfsense/AUTOMA--O-HYBRIS---GERADOR-DE-JSONs.git
-cd AUTOMA--O-HYBRIS---GERADOR-DE-JSONs
-
-# 2. Instalar dependências
-pip install -r requirements.txt
-
-# 3. Executar
 streamlit run src/app_streamlit.py
 ```
 
-> **💡 Dica:** No Windows, use `executar_app.bat` - é muito mais simples!
+Pronto! Abre em **http://localhost:8501** ✅
+
+---
+
+### 🔗 Clone do GitHub (Primeiro passo)
+
+**Já tem Python?** Comece aqui:
+
+```bash
+# Com Git
+git clone https://github.com/marcosfsense/AUTOMA--O-HYBRIS---GERADOR-DE-JSONs.git
+cd AUTOMA--O-HYBRIS---GERADOR-DE-JSONs
+
+# Ou baixe o ZIP (veja seção "Clonando do GitHub" abaixo)
+```
+
+> **Não tem Python?** Use `instalar_python.bat` antes!
 
 ---
 
@@ -209,19 +235,122 @@ Clique em **"Gerar JSON"** e pronto!
 
 ---
 
-## ✅ Pré-requisitos
+## ✅ Opções de Instalação
 
-### Mínimo
-- **Python 3.7+** ([download](https://www.python.org/downloads/))
-- **pip** (incluso no Python)
-- Navegador web moderno
+### 🚀 Opção 1: Instalador Automático (Recomendado - Windows)
 
-### Recomendado (opcional)
-- **Git** - para clonar repositório ([download](https://git-scm.com/))
-- **Postman** - para testar APIs ([download](https://www.postman.com/downloads/))
-- **VS Code** - para editar código ([download](https://code.visualstudio.com/))
+**Para quem NÃO tem Python instalado:**
 
-> **✔️ Sem dependências externas!** O sistema usa apenas a biblioteca padrão do Python.
+```bash
+# Duplo clique em:
+instalar_python.bat
+```
+
+**O que ele faz:**
+- ✅ Verifica se Python está instalado
+- ✅ Baixa Python 3.11 automaticamente (se necessário)
+- ✅ Instala as dependências
+- ✅ Inicia a aplicação
+
+**Tempo: ~3-5 minutos** | **Dificuldade: Muito Fácil** ⭐⭐
+
+---
+
+### 💻 Opção 2: Manual Passo-a-Passo (Todos os SOs)
+
+**Se prefere instalar manualmente:**
+
+1. **Instale Python 3.7+**
+   - Baixe em: https://www.python.org/downloads/
+   - **⚠️ Marque "Add Python to PATH"** durante instalação
+
+2. **Clone o repositório**
+   ```bash
+   git clone https://github.com/marcosfsense/AUTOMA--O-HYBRIS---GERADOR-DE-JSONs.git
+   cd AUTOMA--O-HYBRIS---GERADOR-DE-JSONs
+   ```
+
+3. **Instale as dependências**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Execute a aplicação**
+   ```bash
+   # Windows:
+   executar_app.bat
+
+   # Mac/Linux:
+   streamlit run src/app_streamlit.py
+   ```
+
+**Tempo: ~5-10 minutos** | **Dificuldade: Fácil** ⭐⭐
+
+👉 **Guia completo:** [GUIA_INSTALACAO_PYTHON.md](docs/GUIA_INSTALACAO_PYTHON.md)
+
+---
+
+### 📦 Opção 3: Executável Portátil (Sem Python)
+
+**Para quem quer um único arquivo .exe que funciona em qualquer lugar:**
+
+```bash
+# Requer Python instalado inicialmente
+criar_executavel.bat
+```
+
+**Resultado:**
+- Arquivo: `dist_app/Gerador_JSON_Hybris.exe`
+- Funciona **sem precisar instalar Python**
+- Perfeito para distribuir para colegas
+
+**Tempo: ~3-5 minutos** | **Dificuldade: Muito Fácil** ⭐⭐
+
+---
+
+### 🐳 Opção 4: Docker (Avançado)
+
+**Para quem tem Docker instalado:**
+
+```dockerfile
+FROM python:3.11
+WORKDIR /app
+COPY . .
+RUN pip install -r requirements.txt
+EXPOSE 8501
+CMD ["streamlit", "run", "src/app_streamlit.py"]
+```
+
+Depois execute:
+```bash
+docker build -t hybris-json-generator .
+docker run -p 8501:8501 hybris-json-generator
+```
+
+**Tempo: ~2-3 minutos** | **Dificuldade: Avançado** ⭐⭐⭐⭐
+
+---
+
+## 📋 Comparação de Opções
+
+| Opção | Tempo | Dificuldade | Ideal Para | Arquivo |
+|-------|-------|-----------|----------|---------|
+| **Automático** | 3-5 min | ⭐ Muito Fácil | Iniciantes, Windows | `instalar_python.bat` |
+| **Manual** | 5-10 min | ⭐⭐ Fácil | Todos, qualquer SO | Nenhum |
+| **Executável** | 3-5 min | ⭐ Muito Fácil | Distribuição, Equipe | `criar_executavel.bat` |
+| **Docker** | 2-3 min | ⭐⭐⭐⭐ Avançado | Profissionais DevOps | Dockerfile |
+
+---
+
+## 🆘 Problemas na Instalação?
+
+👉 **Leia:** [GUIA_INSTALACAO_PYTHON.md](docs/GUIA_INSTALACAO_PYTHON.md)
+
+Cobre:
+- ❓ Perguntas frequentes
+- 🐛 10+ problemas comuns e soluções
+- 🔍 Verificação de instalação
+- 💡 Dicas e truques
 
 ---
 
