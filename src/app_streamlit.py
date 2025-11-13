@@ -5,57 +5,82 @@ Versão 2.0 - Interface Web Completa
 Executar com: streamlit run app_streamlit.py
 """
 
-import streamlit as st
-import json
-import os
-from pathlib import Path
-from hybris_json_generator import HybrisJSONGenerator
+# ═══════════════════════════════════════════════════════════════════════
+# IMPORTS - Importações necessárias para o funcionamento
+# ═══════════════════════════════════════════════════════════════════════
 
-# Configuração da página
+import streamlit as st              # Framework web para criar a interface
+import json                         # Biblioteca para manipular JSON
+import os                           # Funções do sistema operacional
+from pathlib import Path            # Trabalhar com caminhos de arquivos
+from hybris_json_generator import HybrisJSONGenerator  # Classe geradora do JSON
+
+# ═══════════════════════════════════════════════════════════════════════
+# CONFIGURAÇÃO DA PÁGINA - Personalizações do Streamlit
+# ═══════════════════════════════════════════════════════════════════════
+
 st.set_page_config(
-    page_title="Gerador JSON Hybris",
-    page_icon="🚀",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Gerador JSON Hybris",   # Título que aparece na aba do navegador
+    page_icon="🚀",                     # Ícone da aba
+    layout="wide",                      # Layout largo (sem bordas laterais)
+    initial_sidebar_state="expanded"    # Sidebar começa expandida
 )
 
-# CSS customizado para melhorar visual
+# ═══════════════════════════════════════════════════════════════════════
+# CSS CUSTOMIZADO - Estilos visuais para a aplicação
+# ═══════════════════════════════════════════════════════════════════════
+
 st.markdown("""
 <style>
+    # Estilos para o cabeçalho principal
     .main-header {
-        font-size: 2.5rem;
-        color: #1f77b4;
-        text-align: center;
-        margin-bottom: 2rem;
+        font-size: 2.5rem;              # Tamanho grande do texto
+        color: #1f77b4;                 # Cor azul
+        text-align: center;             # Centralizar
+        margin-bottom: 2rem;            # Espaço embaixo
     }
+
+    # Estilos para caixa de sucesso (verde)
     .success-box {
-        padding: 1rem;
-        background-color: #d4edda;
-        border: 1px solid #c3e6cb;
-        border-radius: 0.25rem;
-        color: #155724;
+        padding: 1rem;                  # Espaço interno
+        background-color: #d4edda;      # Fundo verde claro
+        border: 1px solid #c3e6cb;      # Borda verde
+        border-radius: 0.25rem;         # Cantos ligeiramente arredondados
+        color: #155724;                 # Texto verde escuro
     }
+
+    # Estilos para caixa de erro (vermelho)
     .error-box {
         padding: 1rem;
-        background-color: #f8d7da;
-        border: 1px solid #f5c6cb;
+        background-color: #f8d7da;      # Fundo vermelho claro
+        border: 1px solid #f5c6cb;      # Borda vermelha
         border-radius: 0.25rem;
-        color: #721c24;
+        color: #721c24;                 # Texto vermelho escuro
     }
+
+    # Estilos para caixa de informação (azul)
     .info-box {
         padding: 1rem;
-        background-color: #d1ecf1;
-        border: 1px solid #bee5eb;
+        background-color: #d1ecf1;      # Fundo azul claro
+        border: 1px solid #bee5eb;      # Borda azul
         border-radius: 0.25rem;
-        color: #0c5460;
+        color: #0c5460;                 # Texto azul escuro
     }
 </style>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True)  # unsafe_allow_html=True permite usar HTML/CSS puro
 
-# Título principal
+# ═══════════════════════════════════════════════════════════════════════
+# TÍTULO PRINCIPAL - Cabeçalho da aplicação
+# ═══════════════════════════════════════════════════════════════════════
+
+# Renderiza o título usando a classe CSS "main-header" definida acima
 st.markdown('<h1 class="main-header">🚀 Gerador de JSON (Fake Callback) -  Hybris</h1>', unsafe_allow_html=True)
 
-# Sidebar com instruções
+# ═══════════════════════════════════════════════════════════════════════
+# SIDEBAR - Barra lateral com instruções e informações
+# ═══════════════════════════════════════════════════════════════════════
+
+# O contexto "with st.sidebar:" cria uma área na barra lateral esquerda
 with st.sidebar:
     # Logo da empresa
     logo_path = Path(__file__).parent.parent / "img" / "logo_S2.png"
