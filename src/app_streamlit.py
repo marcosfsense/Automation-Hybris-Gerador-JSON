@@ -400,9 +400,9 @@ if transaction_type:
         num_transactions = st.number_input(
             "Quantas transações?",
             min_value=2,
-            max_value=5,
+            max_value=10,
             value=default_num_trans,
-            help="Ajuste se necessário. Valor pré-definido com base no JSON colado." if prefill_data else "Entre 2 e 5 transações"
+            help="Ajuste se necessário. Valor pré-definido com base no JSON colado." if prefill_data else "Entre 2 e 10 transações"
         )
 
         # Usar session_state para armazenar dados das transações
@@ -431,11 +431,11 @@ if transaction_type:
                 prefill_trans = None
 
                 if has_existing_trans == "Sim":
-                    st.info("ℹ️ Cole o JSON desta transação específica para pré-preencher o formulário.")
+                    st.info("ℹ️ Cole o JSON desta transação específica.")
 
                     existing_trans_str = st.text_area(
                         f"Cole aqui o JSON da transação {idx+1}:",
-                        height=150,
+                        height=200,
                         placeholder="""{
   "amount": 284050,
   "number": "1111111",
@@ -456,120 +456,130 @@ if transaction_type:
                             st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
                             prefill_trans = None
 
-                # Extrair dados de pré-preenchimento para esta transação específica (se não foi colado manualmente)
-                if prefill_trans is None and prefill_data and idx < len(prefill_data):
-                    prefill_trans = prefill_data[idx]
+                    # Apenas preparar dados do JSON colado
+                    trans_data = prefill_trans if prefill_trans else {}
+                    if trans_data:
+                        temp_transactions.append(trans_data)
 
-                detected_type = "PIX"  # Default
+                else:  # has_existing_trans == "Não"
+                    # Mostrar formulário manual APENAS quando responder "Não"
 
-                if prefill_trans and prefill_trans.get("payment_fields"):
-                    product_code = prefill_trans["payment_fields"].get("primaryProductCode", 25)
-                    if product_code == 25:
-                        detected_type = "PIX"
-                    elif product_code == 2000:
-                        detected_type = "DEBITO"
-                    elif product_code == 1000:
-                        detected_type = "CREDITO"
-
-                # Selecionar tipo de transação
-                type_options = ["PIX", "DEBITO", "CREDITO"]
-                type_index = type_options.index(detected_type) if detected_type in type_options else 0
-
-                trans_type = st.selectbox(
-                    f"Tipo",
-                    type_options,
-                    index=type_index,
-                    key=f"type_{idx}"
-                )
-
-                col1, col2 = st.columns(2)
-
-                with col1:
-                    default_amount = 0.01
-                    if prefill_trans and prefill_trans.get("amount"):
-                        default_amount = max(0.01, prefill_trans.get("amount", 0.0) / 100)
-
-                    trans_amount = st.number_input(
-                        "amount *",
-                        min_value=0.01,
-                        value=default_amount,
-                        step=0.01,
-                        format="%.2f",
-                        key=f"amount_{idx}"
-                    )
-
-                    trans_number = st.text_input(
-                        "number *",
-                        value=prefill_trans.get("number", "") if prefill_trans else "",
-                        key=f"number_{idx}"
-                    )
-
-                    default_merchant = "Fake callback Bruno - "
-                    if prefill_trans and prefill_trans.get("payment_fields"):
-                        default_merchant = prefill_trans["payment_fields"].get("merchantName", default_merchant)
-
-                    trans_merchant = st.text_input(
-                        "merchantName *",
-                        value=default_merchant,
-                        key=f"merchant_{idx}"
-                    )
-
-                with col2:
-                    # Campos condicionais por tipo
-                    if trans_type in ["DEBITO", "CREDITO"]:
-                        default_auth = ""
-                        if prefill_trans and prefill_trans.get("authorization_code"):
-                            default_auth = prefill_trans["authorization_code"]
-
-                        trans_auth = st.text_input(
-                            "authorization_code *",
-                            value=default_auth,
-                            key=f"auth_{idx}"
-                        )
+                    # Extrair dados de pré-preenchimento para esta transação específica
+                    if prefill_data and idx < len(prefill_data):
+                        prefill_trans = prefill_data[idx]
                     else:
-                        trans_auth = None
+                        prefill_trans = None
+
+                    detected_type = "PIX"  # Default
+
+                    if prefill_trans and prefill_trans.get("payment_fields"):
+                        product_code = prefill_trans["payment_fields"].get("primaryProductCode", 25)
+                        if product_code == 25:
+                            detected_type = "PIX"
+                        elif product_code == 2000:
+                            detected_type = "DEBITO"
+                        elif product_code == 1000:
+                            detected_type = "CREDITO"
+
+                    # Selecionar tipo de transação
+                    type_options = ["PIX", "DEBITO", "CREDITO"]
+                    type_index = type_options.index(detected_type) if detected_type in type_options else 0
+
+                    trans_type = st.selectbox(
+                        f"Tipo",
+                        type_options,
+                        index=type_index,
+                        key=f"type_{idx}"
+                    )
+
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        default_amount = 0.01
+                        if prefill_trans and prefill_trans.get("amount"):
+                            default_amount = max(0.01, prefill_trans.get("amount", 0.0) / 100)
+
+                        trans_amount = st.number_input(
+                            "amount *",
+                            min_value=0.01,
+                            value=default_amount,
+                            step=0.01,
+                            format="%.2f",
+                            key=f"amount_{idx}"
+                        )
+
+                        trans_number = st.text_input(
+                            "number *",
+                            value=prefill_trans.get("number", "") if prefill_trans else "",
+                            key=f"number_{idx}"
+                        )
+
+                        default_merchant = "Fake callback Bruno - "
+                        if prefill_trans and prefill_trans.get("payment_fields"):
+                            default_merchant = prefill_trans["payment_fields"].get("merchantName", default_merchant)
+
+                        trans_merchant = st.text_input(
+                            "merchantName *",
+                            value=default_merchant,
+                            key=f"merchant_{idx}"
+                        )
+
+                    with col2:
+                        # Campos condicionais por tipo
+                        if trans_type in ["DEBITO", "CREDITO"]:
+                            default_auth = ""
+                            if prefill_trans and prefill_trans.get("authorization_code"):
+                                default_auth = prefill_trans["authorization_code"]
+
+                            trans_auth = st.text_input(
+                                "authorization_code *",
+                                value=default_auth,
+                                key=f"auth_{idx}"
+                            )
+                        else:
+                            trans_auth = None
+
+                        if trans_type == "CREDITO":
+                            default_quotas = 1
+                            if prefill_trans and prefill_trans.get("payment_fields"):
+                                default_quotas = prefill_trans["payment_fields"].get("numberOfQuotas", 1)
+
+                            trans_quotas = st.number_input(
+                                "numberOfQuotas *",
+                                min_value=1,
+                                max_value=24,
+                                value=int(default_quotas),
+                                key=f"quotas_{idx}"
+                            )
+                        else:
+                            trans_quotas = None
+
+                    # Preparar dados desta transação
+                    trans_data = {
+                        "type": trans_type,
+                        "amount": trans_amount,
+                        "number": trans_number,
+                        "merchant_name": trans_merchant
+                    }
+
+                    if trans_type in ["DEBITO", "CREDITO"]:
+                        trans_data["card_mask"] = "************XXXX"
+                        trans_data["card_brand"] = "XXXXXXXX"
+                        trans_data["authorization_code"] = trans_auth
 
                     if trans_type == "CREDITO":
-                        default_quotas = 1
-                        if prefill_trans and prefill_trans.get("payment_fields"):
-                            default_quotas = prefill_trans["payment_fields"].get("numberOfQuotas", 1)
+                        trans_data["number_of_quotas"] = int(trans_quotas)
 
-                        trans_quotas = st.number_input(
-                            "numberOfQuotas *",
-                            min_value=1,
-                            max_value=24,
-                            value=int(default_quotas),
-                            key=f"quotas_{idx}"
-                        )
-                    else:
-                        trans_quotas = None
+                    # Preservar campos originais se houver pré-preenchimento
+                    if prefill_trans:
+                        if prefill_trans.get("payment_fields"):
+                            trans_data["preserve_payment_fields"] = prefill_trans["payment_fields"]
+                        if prefill_trans.get("card"):
+                            trans_data["preserve_card"] = prefill_trans["card"]
+                        if prefill_trans.get("external_id"):
+                            trans_data["preserve_external_id"] = prefill_trans["external_id"]
 
-                # Preparar dados desta transação
-                trans_data = {
-                    "type": trans_type,
-                    "amount": trans_amount,
-                    "number": trans_number,
-                    "merchant_name": trans_merchant
-                }
-
-                if trans_type in ["DEBITO", "CREDITO"]:
-                    trans_data["card_mask"] = "************XXXX"
-                    trans_data["card_brand"] = "XXXXXXXX"
-                    trans_data["authorization_code"] = trans_auth
-
-                if trans_type == "CREDITO":
-                    trans_data["number_of_quotas"] = int(trans_quotas)
-
-                # Preservar campos originais se houver pré-preenchimento
-                if prefill_trans:
-                    if prefill_trans.get("payment_fields"):
-                        trans_data["preserve_payment_fields"] = prefill_trans["payment_fields"]
-                    if prefill_trans.get("card"):
-                        trans_data["preserve_card"] = prefill_trans["card"]
-                    if prefill_trans.get("external_id"):
-                        trans_data["preserve_external_id"] = prefill_trans["external_id"]
-
-                temp_transactions.append(trans_data)
+                    temp_transactions.append(trans_data)
 
         # Botão para gerar
         if st.button("🚀 Gerar JSON", type="primary"):
