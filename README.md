@@ -117,7 +117,7 @@ Sistema web desenvolvido em **Python puro** (sem dependências externas) para au
 - **PIX** 🔷 Pagamento instantâneo
 - **DÉBITO** 💳 Cartão de débito à vista
 - **CRÉDITO** 💰 Cartão de crédito (1-24 parcelas)
-- **MÚLTIPLAS** 🔀 Combinação de 2+ pagamentos na mesma ordem
+- **MÚLTIPLAS** 🔀 Combinação de 2+ pagamentos na mesma ordem (até 10 transações)
 
 ### ⚙️ Funcionalidades:
 - ✅ Interface web moderna e intuitiva
@@ -127,6 +127,8 @@ Sistema web desenvolvido em **Python puro** (sem dependências externas) para au
 - ✅ IDs únicos de 42 caracteres
 - ✅ Suporte offline (sem dependências externas)
 - ✅ Zero configurações - pronto para usar
+- ✅ **NEW:** Transações múltiplas com até 10 pagamentos por pedido
+- ✅ **NEW:** Opção de preencher manual ou colar JSON por transação
 
 ---
 
@@ -215,12 +217,28 @@ Clique em **"Gerar JSON"** e pronto!
 
 | Tipo | Obrigatórios | Opcionais | Exemplo |
 |------|-------------|-----------|---------|
-| **PIX** | Valor, Number | - | `{"valor": 15050, "number": "001"}` |
-| **DÉBITO** | Valor, Banco, Auth | - | `{"valor": 10000, "bank": "ITAU", "auth": "ABC123"}` |
-| **CRÉDITO** | Valor, Parcelas, Auth | - | `{"valor": 24000, "parcelas": 12, "auth": "XYZ789"}` |
-| **MÚLTIPLAS** | Combinação de 2+ tipos | - | PIX + CRÉDITO juntos |
+| **PIX** | Valor, Number, Comerciante | - | `{"valor": 15050, "number": "001"}` |
+| **DÉBITO** | Valor, Number, Comerciante, Auth | - | `{"valor": 10000, "number": "001", "auth": "ABC123"}` |
+| **CRÉDITO** | Valor, Number, Comerciante, Parcelas, Auth | - | `{"valor": 24000, "number": "001", "parcelas": 12, "auth": "XYZ789"}` |
+| **MÚLTIPLAS** | Combinação de 2-10 tipos | Pré-preenchimento (opcional) | PIX + CRÉDITO + DÉBITO juntos |
+
+### 📝 Múltiplas - Forma de Entrada:
+- **Opção A (Manual):** Responda "Não" → Preencha cada transação com o formulário
+- **Opção B (JSON):** Responda "Sim" → Cole o JSON pronto de cada transação
+- **Flexível:** Misture as duas abordagens nas diferentes abas
 
 > **💡 Todas as moedas em Reais (R$) - conversão automática para centavos**
+
+---
+
+## 🆕 Novidades Recentes
+
+### Versão 2.1 (Novembro 2025)
+- ✅ **Suporte a até 10 transações múltiplas** (antes: 5)
+- ✅ **Interface condicional melhorada**: JSON vs Formulário (escolha clara)
+- ✅ **Pergunta por aba**: "Já existe a transação?" em cada transação
+- ✅ **Flexibilidade total**: Misture JSON pré-preenchido com preenchimento manual
+- ✅ **Validação consolidada**: Soma automática verificada
 
 ---
 
