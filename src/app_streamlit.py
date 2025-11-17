@@ -177,7 +177,6 @@ if 'has_prefill' not in st.session_state:
 
 # PRÉ-PREENCHIMENTO: Será mostrado apenas para MULTIPLAS
 prefill_data = None
-show_fields = False
 
 # SEÇÃO 2.1: PRÉ-PREENCHIMENTO (Mostrado apenas para MULTIPLAS)
 if transaction_type == "MULTIPLAS":
@@ -237,7 +236,6 @@ if transaction_type == "MULTIPLAS":
                     # Debug: mostrar primeira transação
                     with st.expander("🔍 Visualizar dados extraídos (debug)"):
                         st.json(prefill_data)
-                    show_fields = True
             except json.JSONDecodeError as e:
                 st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
                 st.code(existing_transactions_str.strip())
@@ -245,9 +243,8 @@ if transaction_type == "MULTIPLAS":
             # JSON vazio, mas selecionou "Sim"
             st.warning("⚠️ Cole o JSON das transações para continuar.")
     else:
-        # Selecionou "Não" - limpar e mostrar campos
+        # Selecionou "Não" - limpar
         st.session_state.prefill_data = None
-        show_fields = True
 
 # Usar dados do session_state
 if st.session_state.prefill_data:
@@ -260,8 +257,8 @@ transactions_data = []
 result_json = None
 error_message = None
 
-# SEÇÃO 3: CAMPOS ESPECÍFICOS POR TIPO (SOMENTE SE show_fields=True)
-if transaction_type and show_fields:
+# SEÇÃO 3: CAMPOS ESPECÍFICOS POR TIPO
+if transaction_type:
     st.subheader(f"3️⃣ Dados da Transação - {transaction_type}")
 
     # ==================== PIX ====================
