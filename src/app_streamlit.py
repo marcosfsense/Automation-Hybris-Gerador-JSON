@@ -175,15 +175,16 @@ if 'prefill_data' not in st.session_state:
 if 'has_prefill' not in st.session_state:
     st.session_state.has_prefill = "Não"
 
-# SEÇÃO 2.1: PRÉ-PREENCHIMENTO (ANTES DOS CAMPOS!)
+# PRÉ-PREENCHIMENTO: Será mostrado apenas para MULTIPLAS
 prefill_data = None
 show_fields = False
 
-if transaction_type:
+# SEÇÃO 2.1: PRÉ-PREENCHIMENTO (Mostrado apenas para MULTIPLAS)
+if transaction_type == "MULTIPLAS":
     st.subheader("2️⃣.1 Pré-preenchimento (Opcional)")
 
     has_existing_transaction = st.radio(
-        "Já existe a transação?",
+        "Já existe o JSON das transações?",
         ["Não", "Sim"],
         index=0 if st.session_state.has_prefill == "Não" else 1,
         help="Se você já tem o JSON das transações, pode colar aqui para pré-preencher o formulário",
@@ -502,25 +503,58 @@ if transaction_type and show_fields:
             with tab:
                 st.markdown(f"### Transação {idx+1}")
 
-                # Extrair dados de pré-preenchimento para esta transação específica
-                prefill_trans = None
-                detected_type = "PIX"  # Default
+                # ========== PERGUNTA: JÁ EXISTE A TRANSAÇÃO? ==========
+                has_existing_trans = st.radio(
+                    "Já existe a transação?",
+                    ["Não", "Sim"],
+                    index=0,
+                    help="Se você já tem o JSON desta transação, pode colar aqui",
+                    key=f"has_existing_{idx}"
+                )
 
-                if prefill_data and idx < len(prefill_data):
+                # Variável para armazenar dados extraídos da transação
+                prefill_trans = None
+
+                if has_existing_trans == "Sim":
+                    st.info("ℹ️ Cole o JSON desta transação específica para pré-preencher o formulário.")
+
+                    existing_trans_str = st.text_area(
+                        f"Cole aqui o JSON da transação {idx+1}:",
+                        height=150,
+                        placeholder="""{
+  "amount": 284050,
+  "number": "1111111",
+  "status": "PAID",
+  "payment_fields": {
+    "merchantName": "Fake callback Bruno",
+    "authorization_code": "abc123"
+  }
+}""",
+                        key=f"existing_trans_{idx}"
+                    )
+
+                    if existing_trans_str.strip():
+                        try:
+                            prefill_trans = json.loads(existing_trans_str.strip())
+                            st.success(f"✅ Transação {idx+1} carregada com sucesso!")
+                        except json.JSONDecodeError as e:
+                            st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
+                            prefill_trans = None
+
+                # Extrair dados de pré-preenchimento para esta transação específica (se não foi colado manualmente)
+                if prefill_trans is None and prefill_data and idx < len(prefill_data):
                     prefill_trans = prefill_data[idx]
 
-                    # Detectar tipo da transação pelo productCode
-                    if prefill_trans.get("payment_fields"):
-                        product_code = prefill_trans["payment_fields"].get("primaryProductCode", 25)
-                        if product_code == 25:
-                            detected_type = "PIX"
-                        elif product_code == 2000:
-                            detected_type = "DEBITO"
-                        elif product_code == 1000:
-                            detected_type = "CREDITO"
+                detected_type = "PIX"  # Default
 
-                        # Debug
-                        st.caption(f"🔍 Debug: productCode={product_code}, tipo detectado={detected_type}")
+                if prefill_trans and prefill_trans.get("payment_fields"):
+                    product_code = prefill_trans["payment_fields"].get("primaryProductCode", 25)
+                    if product_code == 25:
+                        detected_type = "PIX"
+                    elif product_code == 2000:
+                        detected_type = "DEBITO"
+                    elif product_code == 1000:
+                        detected_type = "CREDITO"
 
                 # Selecionar tipo de transação
                 type_options = ["PIX", "DEBITO", "CREDITO"]
