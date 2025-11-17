@@ -2,16 +2,17 @@
 REM ========================================================
 REM LAUNCHER - GERADOR DE JSON HYBRIS
 REM ========================================================
-REM Verifica dependências e inicia a aplicação
+REM Verifica dependencias e inicia a aplicacao
 REM ========================================================
 
 setlocal enabledelayedexpansion
 
+cls
 echo.
-echo ╔══════════════════════════════════════════════════════╗
-echo ║   GERADOR JSON HYBRIS - LAUNCHER                     ║
-echo ║   Sistema de Geração de JSONs para Pagamentos        ║
-echo ╚══════════════════════════════════════════════════════╝
+echo ========================================================
+echo   GERADOR JSON HYBRIS - LAUNCHER
+echo   Sistema de Geracao de JSONs para Pagamentos
+echo ========================================================
 echo.
 
 REM ========================================================
@@ -19,14 +20,14 @@ REM VERIFICAR SE PYTHON ESTÁ INSTALADO
 REM ========================================================
 python --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ✗ ERRO: Python não está instalado ou não está no PATH
+    echo [ERRO] Python nao esta instalado ou nao esta no PATH
     echo.
-    echo Opções:
-    echo [1] Executar instalador automático
+    echo Opcoes:
+    echo [1] Executar instalador automatico
     echo [2] Ir para https://www.python.org/downloads/
     echo [3] Sair
     echo.
-    set /p CHOICE="Escolha uma opção (1-3): "
+    set /p CHOICE="Escolha uma opcao (1-3): "
 
     if "!CHOICE!"=="1" (
         REM Procurar instalador na pasta raiz
@@ -34,14 +35,14 @@ if %errorlevel% neq 0 (
             call instalar_python.bat
             exit /b 0
         ) else (
-            echo ✗ Script instalador não encontrado
+            echo [ERRO] Script instalador nao encontrado
             pause
             exit /b 1
         )
     ) else if "!CHOICE!"=="2" (
         start https://www.python.org/downloads/
         echo.
-        echo ℹ️  Após instalar Python, execute este script novamente.
+        echo [INFO] Apos instalar Python, execute este script novamente.
         pause
         exit /b 0
     ) else (
@@ -54,13 +55,13 @@ REM VERIFICAR SE STREAMLIT ESTÁ INSTALADO
 REM ========================================================
 python -m pip show streamlit >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ⚠️  Streamlit não está instalado
+    echo [AVISO] Streamlit nao esta instalado
     echo.
-    echo Instalando dependências...
+    echo Instalando dependencias...
     echo.
     pip install -r requirements.txt
     if %errorlevel% neq 0 (
-        echo ✗ Erro ao instalar dependências
+        echo [ERRO] Erro ao instalar dependencias
         echo.
         echo Tente manualmente:
         echo   pip install -r requirements.txt
@@ -73,16 +74,16 @@ REM ========================================================
 REM INICIAR APLICAÇÃO
 REM ========================================================
 echo.
-echo ✓ Todas as dependências verificadas!
+echo [OK] Todas as dependencias verificadas!
 echo.
-echo Iniciando aplicação...
+echo Iniciando aplicacao...
 echo.
-echo ℹ️  O navegador abrirá automaticamente em:
-echo    http://localhost:8501
+echo [INFO] O navegador abrirah automaticamente em:
+echo        http://localhost:8501
 echo.
-echo Para parar a aplicação, pressione Ctrl+C
+echo Para parar a aplicacao, pressione Ctrl+C
 echo.
-echo ════════════════════════════════════════════════════════
+echo ========================================================
 echo.
 
 cd /d "%~dp0"
