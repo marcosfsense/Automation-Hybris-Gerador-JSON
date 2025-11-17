@@ -86,6 +86,6 @@ echo ═════════════════════════
 echo.
 
 cd /d "%~dp0"
-streamlit run src\app_streamlit.py
+python -m streamlit run src\app_streamlit.py
 
 pause
