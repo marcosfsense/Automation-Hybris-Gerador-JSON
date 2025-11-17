@@ -173,6 +173,7 @@ st.markdown("---")
 transactions_data = []
 result_json = None
 error_message = None
+prefill_data = None  # Inicializar prefill_data (removida seção 2.1)
 
 # SEÇÃO 3: CAMPOS ESPECÍFICOS POR TIPO
 if transaction_type:
