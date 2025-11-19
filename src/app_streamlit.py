@@ -207,7 +207,7 @@ if transaction_type:
   "number": "1111111",
   "status": "PAID",
   "payment_fields": {
-    "merchantName": "Fake callback Bruno",
+    "merchantName": "Fake callback ",
     "primaryProductCode": 25
   }
 }""",
@@ -248,7 +248,7 @@ if transaction_type:
                 )
 
             with col2:
-                default_merchant = "Fake callback Bruno - "
+                default_merchant = "Fake callback - "
                 if prefill_pix and prefill_pix.get("payment_fields"):
                     default_merchant = prefill_pix["payment_fields"].get("merchantName", default_merchant)
 
@@ -324,7 +324,7 @@ if transaction_type:
   "number": "1111111",
   "status": "CONFIRMED",
   "payment_fields": {
-    "merchantName": "Fake callback Bruno",
+    "merchantName": "Fake callback ",
     "primaryProductCode": 2000,
     "authorization_code": "abc123"
   }
@@ -364,7 +364,7 @@ if transaction_type:
                 )
 
             with col2:
-                default_merchant = "Fake callback Bruno - "
+                default_merchant = "Fake callback - "
                 if prefill_deb and prefill_deb.get("payment_fields"):
                     default_merchant = prefill_deb["payment_fields"].get("merchantName", default_merchant)
 
@@ -445,7 +445,7 @@ if transaction_type:
   "number": "1111111",
   "status": "CONFIRMED",
   "payment_fields": {
-    "merchantName": "Fake callback Bruno",
+    "merchantName": "Fake callback ",
     "primaryProductCode": 1000,
     "numberOfQuotas": 12,
     "authorization_code": "abc123"
@@ -498,7 +498,7 @@ if transaction_type:
                 )
 
             with col2:
-                default_merchant = "Fake callback Bruno - "
+                default_merchant = "Fake callback - "
                 if prefill_cred and prefill_cred.get("payment_fields"):
                     default_merchant = prefill_cred["payment_fields"].get("merchantName", default_merchant)
 
@@ -608,7 +608,7 @@ if transaction_type:
   "number": "1111111",
   "status": "PAID",
   "payment_fields": {
-    "merchantName": "Fake callback Bruno",
+    "merchantName": "Fake callback ",
     "authorization_code": "abc123"
   }
 }""",
@@ -681,7 +681,7 @@ if transaction_type:
                             key=f"number_{idx}"
                         )
 
-                        default_merchant = "Fake callback Bruno - "
+                        default_merchant = "Fake callback - "
                         if prefill_trans and prefill_trans.get("payment_fields"):
                             default_merchant = prefill_trans["payment_fields"].get("merchantName", default_merchant)
 
