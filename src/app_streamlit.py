@@ -586,14 +586,22 @@ if transaction_type:
             # Validar campos obrigatórios
             all_valid = True
             for i, trans in enumerate(temp_transactions):
-                if not trans.get("number") or not trans.get("merchant_name"):
-                    st.error(f"⚠️ Transação {i+1}: Preencha todos os campos obrigatórios!")
-                    all_valid = False
-
-                if trans["type"] in ["DEBITO", "CREDITO"]:
-                    if not trans.get("authorization_code"):
+                # Se for transação colada (JSON pronto), não validar campos do formulário
+                if "type" not in trans:
+                    # É um JSON colado pronto - validar apenas número
+                    if not trans.get("number"):
+                        st.error(f"⚠️ Transação {i+1}: JSON colado precisa ter 'number'!")
+                        all_valid = False
+                else:
+                    # É transação preenchida manualmente - validar campos completos
+                    if not trans.get("number") or not trans.get("merchant_name"):
                         st.error(f"⚠️ Transação {i+1}: Preencha todos os campos obrigatórios!")
                         all_valid = False
+
+                    if trans["type"] in ["DEBITO", "CREDITO"]:
+                        if not trans.get("authorization_code"):
+                            st.error(f"⚠️ Transação {i+1}: Preencha authorization_code!")
+                            all_valid = False
 
             if all_valid:
                 transactions_data = temp_transactions

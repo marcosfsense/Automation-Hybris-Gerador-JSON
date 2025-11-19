@@ -510,6 +510,17 @@ class HybrisJSONGenerator:
             # Para múltiplas transações, processar cada uma individualmente
             for trans_data in transactions_data:
                 t_type = trans_data.get("type", "").upper()
+
+                # Se não tem tipo, tentar detectar a partir dos dados do JSON colado
+                if not t_type and "payment_fields" in trans_data:
+                    product_code = trans_data["payment_fields"].get("primaryProductCode", 25)
+                    if product_code == 25:
+                        t_type = "PIX"
+                    elif product_code == 2000:
+                        t_type = "DEBITO"
+                    elif product_code == 1000:
+                        t_type = "CREDITO"
+
                 t_amount = self.format_money(trans_data.get("amount", 0))
 
                 if t_type == "PIX":
