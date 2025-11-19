@@ -181,209 +181,376 @@ if transaction_type:
 
     # ==================== PIX ====================
     if transaction_type == "PIX":
+        # Pergunta: Já existe a transação?
+        pix_has_existing = st.radio(
+            "Já existe a transação?",
+            ["Não", "Sim"],
+            index=0,
+            help="Se você já tem o JSON desta transação, pode colar aqui",
+            key="pix_has_existing"
+        )
+
         # Extrair dados de pré-preenchimento se existirem
         prefill_pix = None
         if prefill_data and len(prefill_data) > 0:
             prefill_pix = prefill_data[0]
 
-        col1, col2 = st.columns(2)
+        # ========== BLOCO: SIM (Apenas JSON) ==========
+        if pix_has_existing == "Sim":
+            st.info("ℹ️ Cole o JSON desta transação específica.")
 
-        with col1:
-            pix_amount = st.number_input(
-                "amount *",
-                min_value=0.01,
-                value=prefill_pix.get("amount", 0.0) / 100 if prefill_pix else 0.01,
-                step=0.01,
-                format="%.2f",
-                help="Valor da transação em Reais"
+            pix_json_str = st.text_area(
+                "Cole aqui o JSON da transação PIX:",
+                height=200,
+                placeholder="""{
+  "amount": 284050,
+  "number": "1111111",
+  "status": "PAID",
+  "payment_fields": {
+    "merchantName": "Fake callback Bruno",
+    "primaryProductCode": 25
+  }
+}""",
+                key="pix_json_input"
             )
 
-            pix_number = st.text_input(
-                "number *",
-                value=prefill_pix.get("number", "") if prefill_pix else "",
-                help="Número da transação/terminal"
-            )
+            prefill_pix_json = None
+            if pix_json_str.strip():
+                try:
+                    prefill_pix_json = json.loads(pix_json_str.strip())
+                    st.success("✅ Transação carregada com sucesso!")
+                except json.JSONDecodeError as e:
+                    st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
+                    prefill_pix_json = None
 
-        with col2:
-            default_merchant = "Fake callback Bruno - "
-            if prefill_pix and prefill_pix.get("payment_fields"):
-                default_merchant = prefill_pix["payment_fields"].get("merchantName", default_merchant)
-
-            pix_merchant_name = st.text_input(
-                "merchantName *",
-                value=default_merchant,
-                help="Nome do estabelecimento comercial"
-            )
-
-            default_auth = ""
-            if prefill_pix and prefill_pix.get("authorization_code"):
-                default_auth = prefill_pix["authorization_code"]
-
-            pix_auth_code = st.text_input(
-                "authorization_code (opcional)",
-                value=default_auth,
-                help="Deixe em branco para gerar automaticamente"
-            )
-
-        # Preparar dados
-        if st.button("🚀 Gerar JSON", type="primary"):
-            if not pix_number or not pix_merchant_name:
-                st.error("⚠️ Por favor, preencha todos os campos obrigatórios!")
-            else:
-                trans_data = {
-                    "amount": pix_amount,
-                    "number": pix_number,
-                    "merchant_name": pix_merchant_name,
-                    "authorization_code": pix_auth_code if pix_auth_code else None
-                }
-                # Preservar payment_fields originais se houver pré-preenchimento
-                if prefill_pix and prefill_pix.get("payment_fields"):
-                    trans_data["preserve_payment_fields"] = prefill_pix["payment_fields"]
-
+            trans_data = prefill_pix_json if prefill_pix_json else {}
+            if trans_data:
                 transactions_data = [trans_data]
+
+        # ========== BLOCO: NÃO (Formulário Manual) ==========
+        else:
+            col1, col2 = st.columns(2)
+
+            with col1:
+                pix_amount = st.number_input(
+                    "amount *",
+                    min_value=0.01,
+                    value=prefill_pix.get("amount", 0.0) / 100 if prefill_pix else 0.01,
+                    step=0.01,
+                    format="%.2f",
+                    help="Valor da transação em Reais"
+                )
+
+                pix_number = st.text_input(
+                    "number *",
+                    value=prefill_pix.get("number", "") if prefill_pix else "",
+                    help="Número da transação/terminal"
+                )
+
+            with col2:
+                default_merchant = "Fake callback Bruno - "
+                if prefill_pix and prefill_pix.get("payment_fields"):
+                    default_merchant = prefill_pix["payment_fields"].get("merchantName", default_merchant)
+
+                pix_merchant_name = st.text_input(
+                    "merchantName *",
+                    value=default_merchant,
+                    help="Nome do estabelecimento comercial"
+                )
+
+                default_auth = ""
+                if prefill_pix and prefill_pix.get("authorization_code"):
+                    default_auth = prefill_pix["authorization_code"]
+
+                pix_auth_code = st.text_input(
+                    "authorization_code (opcional)",
+                    value=default_auth,
+                    help="Deixe em branco para gerar automaticamente"
+                )
+
+            # Preparar dados
+            trans_data = {
+                "amount": pix_amount,
+                "number": pix_number,
+                "merchant_name": pix_merchant_name,
+                "authorization_code": pix_auth_code if pix_auth_code else None
+            }
+            # Preservar payment_fields originais se houver pré-preenchimento
+            if prefill_pix and prefill_pix.get("payment_fields"):
+                trans_data["preserve_payment_fields"] = prefill_pix["payment_fields"]
+
+            transactions_data = [trans_data]
+
+        # Botão para gerar
+        if st.button("🚀 Gerar JSON", type="primary"):
+            if pix_has_existing == "Sim":
+                # JSON colado - validar apenas número
+                if not transactions_data or not transactions_data[0].get("number"):
+                    st.error("⚠️ JSON colado precisa ter 'number'!")
+                else:
+                    transactions_data = [transactions_data[0]]
+            else:
+                # Formulário manual - validar campos
+                if not pix_number or not pix_merchant_name:
+                    st.error("⚠️ Por favor, preencha todos os campos obrigatórios!")
+                else:
+                    transactions_data = [trans_data]
 
     # ==================== DÉBITO ====================
     elif transaction_type == "DEBITO":
+        # Pergunta: Já existe a transação?
+        deb_has_existing = st.radio(
+            "Já existe a transação?",
+            ["Não", "Sim"],
+            index=0,
+            help="Se você já tem o JSON desta transação, pode colar aqui",
+            key="deb_has_existing"
+        )
+
         # Extrair dados de pré-preenchimento se existirem
         prefill_deb = None
         if prefill_data and len(prefill_data) > 0:
             prefill_deb = prefill_data[0]
 
-        col1, col2 = st.columns(2)
+        # ========== BLOCO: SIM (Apenas JSON) ==========
+        if deb_has_existing == "Sim":
+            st.info("ℹ️ Cole o JSON desta transação específica.")
 
-        with col1:
-            deb_amount = st.number_input(
-                "amount *",
-                min_value=0.01,
-                value=prefill_deb.get("amount", 0.0) / 100 if prefill_deb else 0.01,
-                step=0.01,
-                format="%.2f"
+            deb_json_str = st.text_area(
+                "Cole aqui o JSON da transação DÉBITO:",
+                height=200,
+                placeholder="""{
+  "amount": 100000,
+  "number": "1111111",
+  "status": "CONFIRMED",
+  "payment_fields": {
+    "merchantName": "Fake callback Bruno",
+    "primaryProductCode": 2000,
+    "authorization_code": "abc123"
+  }
+}""",
+                key="deb_json_input"
             )
 
-            deb_number = st.text_input(
-                "number *",
-                value=prefill_deb.get("number", "") if prefill_deb else ""
-            )
+            prefill_deb_json = None
+            if deb_json_str.strip():
+                try:
+                    prefill_deb_json = json.loads(deb_json_str.strip())
+                    st.success("✅ Transação carregada com sucesso!")
+                except json.JSONDecodeError as e:
+                    st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
+                    prefill_deb_json = None
 
-        with col2:
-            default_merchant = "Fake callback Bruno - "
-            if prefill_deb and prefill_deb.get("payment_fields"):
-                default_merchant = prefill_deb["payment_fields"].get("merchantName", default_merchant)
-
-            deb_merchant_name = st.text_input(
-                "merchantName *",
-                value=default_merchant
-            )
-
-            default_auth = ""
-            if prefill_deb and prefill_deb.get("authorization_code"):
-                default_auth = prefill_deb["authorization_code"]
-
-            deb_auth_code = st.text_input(
-                "authorization_code *",
-                value=default_auth
-            )
-
-        if st.button("🚀 Gerar JSON", type="primary"):
-            if not all([deb_number, deb_merchant_name, deb_auth_code]):
-                st.error("⚠️ Por favor, preencha todos os campos obrigatórios!")
-            else:
-                trans_data = {
-                    "amount": deb_amount,
-                    "number": deb_number,
-                    "merchant_name": deb_merchant_name,
-                    "card_mask": "************XXXX",
-                    "card_brand": "XXXXXXXX",
-                    "authorization_code": deb_auth_code
-                }
-                # Preservar campos originais se houver pré-preenchimento
-                if prefill_deb:
-                    if prefill_deb.get("payment_fields"):
-                        trans_data["preserve_payment_fields"] = prefill_deb["payment_fields"]
-                    if prefill_deb.get("card"):
-                        trans_data["preserve_card"] = prefill_deb["card"]
-                    if prefill_deb.get("external_id"):
-                        trans_data["preserve_external_id"] = prefill_deb["external_id"]
-
+            trans_data = prefill_deb_json if prefill_deb_json else {}
+            if trans_data:
                 transactions_data = [trans_data]
+
+        # ========== BLOCO: NÃO (Formulário Manual) ==========
+        else:
+            col1, col2 = st.columns(2)
+
+            with col1:
+                deb_amount = st.number_input(
+                    "amount *",
+                    min_value=0.01,
+                    value=prefill_deb.get("amount", 0.0) / 100 if prefill_deb else 0.01,
+                    step=0.01,
+                    format="%.2f"
+                )
+
+                deb_number = st.text_input(
+                    "number *",
+                    value=prefill_deb.get("number", "") if prefill_deb else ""
+                )
+
+            with col2:
+                default_merchant = "Fake callback Bruno - "
+                if prefill_deb and prefill_deb.get("payment_fields"):
+                    default_merchant = prefill_deb["payment_fields"].get("merchantName", default_merchant)
+
+                deb_merchant_name = st.text_input(
+                    "merchantName *",
+                    value=default_merchant
+                )
+
+                default_auth = ""
+                if prefill_deb and prefill_deb.get("authorization_code"):
+                    default_auth = prefill_deb["authorization_code"]
+
+                deb_auth_code = st.text_input(
+                    "authorization_code *",
+                    value=default_auth
+                )
+
+            # Preparar dados
+            trans_data = {
+                "amount": deb_amount,
+                "number": deb_number,
+                "merchant_name": deb_merchant_name,
+                "card_mask": "************XXXX",
+                "card_brand": "XXXXXXXX",
+                "authorization_code": deb_auth_code
+            }
+            # Preservar campos originais se houver pré-preenchimento
+            if prefill_deb:
+                if prefill_deb.get("payment_fields"):
+                    trans_data["preserve_payment_fields"] = prefill_deb["payment_fields"]
+                if prefill_deb.get("card"):
+                    trans_data["preserve_card"] = prefill_deb["card"]
+                if prefill_deb.get("external_id"):
+                    trans_data["preserve_external_id"] = prefill_deb["external_id"]
+
+            transactions_data = [trans_data]
+
+        # Botão para gerar
+        if st.button("🚀 Gerar JSON", type="primary"):
+            if deb_has_existing == "Sim":
+                # JSON colado - validar apenas número
+                if not transactions_data or not transactions_data[0].get("number"):
+                    st.error("⚠️ JSON colado precisa ter 'number'!")
+                else:
+                    transactions_data = [transactions_data[0]]
+            else:
+                # Formulário manual - validar campos
+                if not all([deb_number, deb_merchant_name, deb_auth_code]):
+                    st.error("⚠️ Por favor, preencha todos os campos obrigatórios!")
+                else:
+                    transactions_data = [trans_data]
 
     # ==================== CRÉDITO ====================
     elif transaction_type == "CREDITO":
+        # Pergunta: Já existe a transação?
+        cred_has_existing = st.radio(
+            "Já existe a transação?",
+            ["Não", "Sim"],
+            index=0,
+            help="Se você já tem o JSON desta transação, pode colar aqui",
+            key="cred_has_existing"
+        )
+
         # Extrair dados de pré-preenchimento se existirem
         prefill_cred = None
         if prefill_data and len(prefill_data) > 0:
             prefill_cred = prefill_data[0]
 
-        col1, col2 = st.columns(2)
+        # ========== BLOCO: SIM (Apenas JSON) ==========
+        if cred_has_existing == "Sim":
+            st.info("ℹ️ Cole o JSON desta transação específica.")
 
-        with col1:
-            cred_amount = st.number_input(
-                "amount *",
-                min_value=0.01,
-                value=prefill_cred.get("amount", 0.0) / 100 if prefill_cred else 0.01,
-                step=0.01,
-                format="%.2f"
+            cred_json_str = st.text_area(
+                "Cole aqui o JSON da transação CRÉDITO:",
+                height=200,
+                placeholder="""{
+  "amount": 240000,
+  "number": "1111111",
+  "status": "CONFIRMED",
+  "payment_fields": {
+    "merchantName": "Fake callback Bruno",
+    "primaryProductCode": 1000,
+    "numberOfQuotas": 12,
+    "authorization_code": "abc123"
+  }
+}""",
+                key="cred_json_input"
             )
 
-            cred_number = st.text_input(
-                "number *",
-                value=prefill_cred.get("number", "") if prefill_cred else ""
-            )
+            prefill_cred_json = None
+            if cred_json_str.strip():
+                try:
+                    prefill_cred_json = json.loads(cred_json_str.strip())
+                    st.success("✅ Transação carregada com sucesso!")
+                except json.JSONDecodeError as e:
+                    st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
+                    prefill_cred_json = None
 
-            default_quotas = 1
-            if prefill_cred and prefill_cred.get("payment_fields"):
-                default_quotas = prefill_cred["payment_fields"].get("numberOfQuotas", 1)
-
-            cred_quotas = st.number_input(
-                "numberOfQuotas *",
-                min_value=1,
-                max_value=24,
-                value=int(default_quotas),
-                help="Entre 1 e 24 parcelas"
-            )
-
-        with col2:
-            default_merchant = "Fake callback Bruno - "
-            if prefill_cred and prefill_cred.get("payment_fields"):
-                default_merchant = prefill_cred["payment_fields"].get("merchantName", default_merchant)
-
-            cred_merchant_name = st.text_input(
-                "merchantName *",
-                value=default_merchant
-            )
-
-            default_auth = ""
-            if prefill_cred and prefill_cred.get("authorization_code"):
-                default_auth = prefill_cred["authorization_code"]
-
-            cred_auth_code = st.text_input(
-                "authorization_code *",
-                value=default_auth
-            )
-
-        if st.button("🚀 Gerar JSON", type="primary"):
-            if not all([cred_number, cred_merchant_name, cred_auth_code]):
-                st.error("⚠️ Por favor, preencha todos os campos obrigatórios!")
-            else:
-                trans_data = {
-                    "amount": cred_amount,
-                    "number": cred_number,
-                    "merchant_name": cred_merchant_name,
-                    "number_of_quotas": int(cred_quotas),
-                    "card_mask": "************XXXX",
-                    "card_brand": "XXXXXXXX",
-                    "authorization_code": cred_auth_code
-                }
-                # Preservar campos originais se houver pré-preenchimento
-                if prefill_cred:
-                    if prefill_cred.get("payment_fields"):
-                        trans_data["preserve_payment_fields"] = prefill_cred["payment_fields"]
-                    if prefill_cred.get("card"):
-                        trans_data["preserve_card"] = prefill_cred["card"]
-                    if prefill_cred.get("external_id"):
-                        trans_data["preserve_external_id"] = prefill_cred["external_id"]
-
+            trans_data = prefill_cred_json if prefill_cred_json else {}
+            if trans_data:
                 transactions_data = [trans_data]
+
+        # ========== BLOCO: NÃO (Formulário Manual) ==========
+        else:
+            col1, col2 = st.columns(2)
+
+            with col1:
+                cred_amount = st.number_input(
+                    "amount *",
+                    min_value=0.01,
+                    value=prefill_cred.get("amount", 0.0) / 100 if prefill_cred else 0.01,
+                    step=0.01,
+                    format="%.2f"
+                )
+
+                cred_number = st.text_input(
+                    "number *",
+                    value=prefill_cred.get("number", "") if prefill_cred else ""
+                )
+
+                default_quotas = 1
+                if prefill_cred and prefill_cred.get("payment_fields"):
+                    default_quotas = prefill_cred["payment_fields"].get("numberOfQuotas", 1)
+
+                cred_quotas = st.number_input(
+                    "numberOfQuotas *",
+                    min_value=1,
+                    max_value=24,
+                    value=int(default_quotas),
+                    help="Entre 1 e 24 parcelas"
+                )
+
+            with col2:
+                default_merchant = "Fake callback Bruno - "
+                if prefill_cred and prefill_cred.get("payment_fields"):
+                    default_merchant = prefill_cred["payment_fields"].get("merchantName", default_merchant)
+
+                cred_merchant_name = st.text_input(
+                    "merchantName *",
+                    value=default_merchant
+                )
+
+                default_auth = ""
+                if prefill_cred and prefill_cred.get("authorization_code"):
+                    default_auth = prefill_cred["authorization_code"]
+
+                cred_auth_code = st.text_input(
+                    "authorization_code *",
+                    value=default_auth
+                )
+
+            # Preparar dados
+            trans_data = {
+                "amount": cred_amount,
+                "number": cred_number,
+                "merchant_name": cred_merchant_name,
+                "number_of_quotas": int(cred_quotas),
+                "card_mask": "************XXXX",
+                "card_brand": "XXXXXXXX",
+                "authorization_code": cred_auth_code
+            }
+            # Preservar campos originais se houver pré-preenchimento
+            if prefill_cred:
+                if prefill_cred.get("payment_fields"):
+                    trans_data["preserve_payment_fields"] = prefill_cred["payment_fields"]
+                if prefill_cred.get("card"):
+                    trans_data["preserve_card"] = prefill_cred["card"]
+                if prefill_cred.get("external_id"):
+                    trans_data["preserve_external_id"] = prefill_cred["external_id"]
+
+            transactions_data = [trans_data]
+
+        # Botão para gerar
+        if st.button("🚀 Gerar JSON", type="primary"):
+            if cred_has_existing == "Sim":
+                # JSON colado - validar apenas número
+                if not transactions_data or not transactions_data[0].get("number"):
+                    st.error("⚠️ JSON colado precisa ter 'number'!")
+                else:
+                    transactions_data = [transactions_data[0]]
+            else:
+                # Formulário manual - validar campos
+                if not all([cred_number, cred_merchant_name, cred_auth_code]):
+                    st.error("⚠️ Por favor, preencha todos os campos obrigatórios!")
+                else:
+                    transactions_data = [trans_data]
 
     # ==================== MÚLTIPLAS TRANSAÇÕES ====================
     elif transaction_type == "MULTIPLAS":
