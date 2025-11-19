@@ -127,8 +127,10 @@ Sistema web desenvolvido em **Python puro** (sem dependências externas) para au
 - ✅ IDs únicos de 42 caracteres
 - ✅ Suporte offline (sem dependências externas)
 - ✅ Zero configurações - pronto para usar
-- ✅ **NEW:** Transações múltiplas com até 10 pagamentos por pedido
-- ✅ **NEW:** Opção de preencher manual ou colar JSON por transação
+- ✅ **NEW:** Pergunta "Já existe a transação?" em TODAS as transações
+- ✅ **NEW:** Opção de preencher manual ou colar JSON por transação (PIX, DÉBITO, CRÉDITO, MÚLTIPLAS)
+- ✅ **NEW:** Interface consistente e uniforme em todos os tipos
+- ✅ **NEW:** Flexibilidade total: mix de JSONs + formulário na mesma ordem
 
 ---
 
@@ -233,10 +235,17 @@ Clique em **"Gerar JSON"** e pronto!
 
 ## 🆕 Novidades Recentes
 
+### Versão 2.2 (Novembro 2025)
+- ✅ **Interface condicional em TODOS os tipos** (PIX, DÉBITO, CRÉDITO, MÚLTIPLAS)
+- ✅ **Pergunta "Já existe a transação?"** em cada transação individual
+- ✅ **JSON vs Formulário**: Escolha clara (Sim = JSON, Não = Formulário)
+- ✅ **Flexibilidade total**: Mix de JSONs colados + preenchimento manual
+- ✅ **Validação inteligente**: Diferentes validações por tipo de entrada
+
 ### Versão 2.1 (Novembro 2025)
 - ✅ **Suporte a até 10 transações múltiplas** (antes: 5)
 - ✅ **Interface condicional melhorada**: JSON vs Formulário (escolha clara)
-- ✅ **Pergunta por aba**: "Já existe a transação?" em cada transação
+- ✅ **Pergunta por aba**: "Já existe a transação?" em MÚLTIPLAS
 - ✅ **Flexibilidade total**: Misture JSON pré-preenchido com preenchimento manual
 - ✅ **Validação consolidada**: Soma automática verificada
 
