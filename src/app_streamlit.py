@@ -493,8 +493,8 @@ if transaction_type:
             with col1:
                 pix_amount = st.number_input(
                     "amount *",
-                    min_value=0.01,
-                    value=prefill_pix.get("amount", 0.0) / 100 if prefill_pix else 0.01,
+                    min_value=0.00,
+                    value=prefill_pix.get("amount", 0.0) / 100 if prefill_pix else 0.00,
                     step=0.01,
                     format="%.2f",
                     help="Valor da transação em Reais"
@@ -625,8 +625,8 @@ if transaction_type:
             with col1:
                 deb_amount = st.number_input(
                     "amount *",
-                    min_value=0.01,
-                    value=prefill_deb.get("amount", 0.0) / 100 if prefill_deb else 0.01,
+                    min_value=0.00,
+                    value=prefill_deb.get("amount", 0.0) / 100 if prefill_deb else 0.00,
                     step=0.01,
                     format="%.2f"
                 )
@@ -761,8 +761,8 @@ if transaction_type:
             with col1:
                 cred_amount = st.number_input(
                     "amount *",
-                    min_value=0.01,
-                    value=prefill_cred.get("amount", 0.0) / 100 if prefill_cred else 0.01,
+                    min_value=0.00,
+                    value=prefill_cred.get("amount", 0.0) / 100 if prefill_cred else 0.00,
                     step=0.01,
                     format="%.2f"
                 )
@@ -971,13 +971,13 @@ if transaction_type:
                     col1, col2 = st.columns(2)
 
                     with col1:
-                        default_amount = 0.01
+                        default_amount = 0.00
                         if prefill_trans and prefill_trans.get("amount"):
-                            default_amount = max(0.01, prefill_trans.get("amount", 0.0) / 100)
+                            default_amount = max(0.00, prefill_trans.get("amount", 0.0) / 100)
 
                         trans_amount = st.number_input(
                             "amount *",
-                            min_value=0.01,
+                            min_value=0.00,
                             value=default_amount,
                             step=0.01,
                             format="%.2f",
