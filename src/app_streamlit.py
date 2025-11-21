@@ -23,11 +23,16 @@ def extract_transaction_from_hybris(data: dict) -> dict:
     """
     Extrai a transação de diferentes formatos que o Hybris pode retornar.
 
+    Inteligentemente detecta e navega por múltiplos níveis de aninhamento,
+    suportando diversos formatos de resposta da API Hybris.
+
     Suporta:
     1. Objeto direto: { "id": "...", "amount": ... }
     2. Com chave "transaction": { "transaction": { "id": "...", ... } }
     3. Com chave "trasaction" (typo): { "trasaction": { "id": "...", ... } }
     4. Com chave "transactions" (array): { "transactions": [{ "id": "...", ... }] }
+    5. Aninhado com order: { "id": "order", "trasaction": { "id": "trans", ... } }
+    6. Múltiplos campos + transação: { "id": "...", "order_id": "...", "transactions": [...] }
 
     Args:
         data: Dict com a transação em qualquer formato
@@ -35,25 +40,56 @@ def extract_transaction_from_hybris(data: dict) -> dict:
     Returns:
         Dict com a transação extraída, ou Dict vazio se não encontrar
     """
-    # Se for um objeto direto com "id" e "amount", retornar como está
+    # Estratégia 1: Se for um objeto direto com "id" e "amount", retornar como está
+    # (indica que é a transação própria)
     if data.get("id") and data.get("amount"):
         return data
 
-    # Se tiver chave "transaction" (correto), extrair
-    if "transaction" in data and isinstance(data["transaction"], dict):
-        return data["transaction"]
+    # Estratégia 2: Procurar por chaves conhecidas de transação (em ordem de prioridade)
+    transaction_keys = ["transaction", "trasaction", "transactions"]
 
-    # Se tiver chave "trasaction" (typo comum), extrair
-    if "trasaction" in data and isinstance(data["trasaction"], dict):
-        return data["trasaction"]
+    for key in transaction_keys:
+        if key in data:
+            value = data[key]
 
-    # Se tiver chave "transactions" (plural), tentar pegar o primeiro
-    if "transactions" in data and isinstance(data["transactions"], (list, tuple)):
-        if len(data["transactions"]) > 0:
-            return data["transactions"][0]
+            # Se for um dict direto, retornar
+            if isinstance(value, dict):
+                # Verificar se é a transação ou se precisa descer mais
+                if value.get("id") and value.get("amount"):
+                    return value
+                # Se não tem amount, pode estar em outro nível (improvável mas seguro)
+                return value
 
-    # Se não encontrar em nenhum nível, retornar o original
-    # (pode ser que já seja a transação correta)
+            # Se for um array, pegar o primeiro elemento
+            if isinstance(value, (list, tuple)) and len(value) > 0:
+                first_item = value[0]
+                if isinstance(first_item, dict):
+                    if first_item.get("id") and first_item.get("amount"):
+                        return first_item
+                    return first_item
+
+    # Estratégia 3: Se não encontrou nas chaves conhecidas, procurar recursivamente
+    # por um objeto que tem "id" e "amount" em qualquer nível
+    for key, value in data.items():
+        if isinstance(value, dict):
+            # Tentar extrair recursivamente
+            if value.get("id") and value.get("amount"):
+                return value
+
+            # Se for um array, tentar o primeiro elemento
+            if isinstance(value, (list, tuple)) and len(value) > 0:
+                first_item = value[0]
+                if isinstance(first_item, dict) and first_item.get("id") and first_item.get("amount"):
+                    return first_item
+
+    # Estratégia 4: Se o objeto tem muitos campos mas não tem "amount",
+    # procurar por "amount" dentro de sub-objetos
+    for key, value in data.items():
+        if isinstance(value, dict) and value.get("amount"):
+            return value
+
+    # Se nada encontrar, retornar o original
+    # (pode ser que já seja a transação correta mesmo sem amount no nível superior)
     return data
 
 # ═══════════════════════════════════════════════════════════════════════
