@@ -16,6 +16,47 @@ from pathlib import Path            # Trabalhar com caminhos de arquivos
 from hybris_json_generator import HybrisJSONGenerator  # Classe geradora do JSON
 
 # ═══════════════════════════════════════════════════════════════════════
+# FUNÇÃO HELPER - Extrair transação de diferentes formatos Hybris
+# ═══════════════════════════════════════════════════════════════════════
+
+def extract_transaction_from_hybris(data: dict) -> dict:
+    """
+    Extrai a transação de diferentes formatos que o Hybris pode retornar.
+
+    Suporta:
+    1. Objeto direto: { "id": "...", "amount": ... }
+    2. Com chave "transaction": { "transaction": { "id": "...", ... } }
+    3. Com chave "trasaction" (typo): { "trasaction": { "id": "...", ... } }
+    4. Com chave "transactions" (array): { "transactions": [{ "id": "...", ... }] }
+
+    Args:
+        data: Dict com a transação em qualquer formato
+
+    Returns:
+        Dict com a transação extraída, ou Dict vazio se não encontrar
+    """
+    # Se for um objeto direto com "id" e "amount", retornar como está
+    if data.get("id") and data.get("amount"):
+        return data
+
+    # Se tiver chave "transaction" (correto), extrair
+    if "transaction" in data and isinstance(data["transaction"], dict):
+        return data["transaction"]
+
+    # Se tiver chave "trasaction" (typo comum), extrair
+    if "trasaction" in data and isinstance(data["trasaction"], dict):
+        return data["trasaction"]
+
+    # Se tiver chave "transactions" (plural), tentar pegar o primeiro
+    if "transactions" in data and isinstance(data["transactions"], (list, tuple)):
+        if len(data["transactions"]) > 0:
+            return data["transactions"][0]
+
+    # Se não encontrar em nenhum nível, retornar o original
+    # (pode ser que já seja a transação correta)
+    return data
+
+# ═══════════════════════════════════════════════════════════════════════
 # CONFIGURAÇÃO DA PÁGINA - Personalizações do Streamlit
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -217,7 +258,9 @@ if transaction_type:
             prefill_pix_json = None
             if pix_json_str.strip():
                 try:
-                    prefill_pix_json = json.loads(pix_json_str.strip())
+                    json_loaded = json.loads(pix_json_str.strip())
+                    # Extrair transação de diferentes formatos Hybris
+                    prefill_pix_json = extract_transaction_from_hybris(json_loaded)
                     st.success("✅ Transação carregada com sucesso!")
                 except json.JSONDecodeError as e:
                     st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
@@ -335,7 +378,9 @@ if transaction_type:
             prefill_deb_json = None
             if deb_json_str.strip():
                 try:
-                    prefill_deb_json = json.loads(deb_json_str.strip())
+                    json_loaded = json.loads(deb_json_str.strip())
+                    # Extrair transação de diferentes formatos Hybris
+                    prefill_deb_json = extract_transaction_from_hybris(json_loaded)
                     st.success("✅ Transação carregada com sucesso!")
                 except json.JSONDecodeError as e:
                     st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
@@ -457,7 +502,9 @@ if transaction_type:
             prefill_cred_json = None
             if cred_json_str.strip():
                 try:
-                    prefill_cred_json = json.loads(cred_json_str.strip())
+                    json_loaded = json.loads(cred_json_str.strip())
+                    # Extrair transação de diferentes formatos Hybris
+                    prefill_cred_json = extract_transaction_from_hybris(json_loaded)
                     st.success("✅ Transação carregada com sucesso!")
                 except json.JSONDecodeError as e:
                     st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
@@ -617,7 +664,9 @@ if transaction_type:
 
                     if existing_trans_str.strip():
                         try:
-                            prefill_trans = json.loads(existing_trans_str.strip())
+                            json_loaded = json.loads(existing_trans_str.strip())
+                            # Extrair transação de diferentes formatos Hybris
+                            prefill_trans = extract_transaction_from_hybris(json_loaded)
                             st.success(f"✅ Transação {idx+1} carregada com sucesso!")
                         except json.JSONDecodeError as e:
                             st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
