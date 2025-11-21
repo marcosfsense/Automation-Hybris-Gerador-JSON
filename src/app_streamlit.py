@@ -568,17 +568,25 @@ if transaction_type:
                     value=prefill_cred.get("number", "") if prefill_cred else ""
                 )
 
-                default_quotas = 1
-                if prefill_cred and prefill_cred.get("payment_fields"):
-                    default_quotas = prefill_cred["payment_fields"].get("numberOfQuotas", 1)
+                # Determinar valor padrão para numberOfQuotas
+                # Opções: vazio (0) ou 1-24
+                quotas_options = [""] + [str(i) for i in range(1, 25)]
 
-                cred_quotas = st.number_input(
+                default_quotas_index = 0  # Vazio por padrão
+                if prefill_cred and prefill_cred.get("payment_fields"):
+                    quotas_from_prefill = prefill_cred["payment_fields"].get("numberOfQuotas")
+                    if quotas_from_prefill and 1 <= quotas_from_prefill <= 24:
+                        default_quotas_index = quotas_from_prefill
+
+                cred_quotas_str = st.selectbox(
                     "numberOfQuotas *",
-                    min_value=1,
-                    max_value=24,
-                    value=int(default_quotas),
-                    help="Entre 1 e 24 parcelas"
+                    quotas_options,
+                    index=default_quotas_index,
+                    help="Selecione entre 1 e 24 parcelas"
                 )
+
+                # Converter para inteiro (0 se vazio)
+                cred_quotas = int(cred_quotas_str) if cred_quotas_str else 0
 
             with col2:
                 default_merchant = "Fake callback - "
@@ -630,8 +638,8 @@ if transaction_type:
                     transactions_data = [transactions_data[0]]
             else:
                 # Formulário manual - validar campos
-                if not all([cred_number, cred_merchant_name, cred_auth_code]):
-                    st.error("⚠️ Por favor, preencha todos os campos obrigatórios!")
+                if not all([cred_number, cred_merchant_name, cred_auth_code]) or cred_quotas == 0:
+                    st.error("⚠️ Por favor, preencha todos os campos obrigatórios (incluindo numberOfQuotas)!")
                 else:
                     transactions_data = [trans_data]
 
@@ -792,17 +800,25 @@ if transaction_type:
                             trans_auth = None
 
                         if trans_type == "CREDITO":
-                            default_quotas = 1
-                            if prefill_trans and prefill_trans.get("payment_fields"):
-                                default_quotas = prefill_trans["payment_fields"].get("numberOfQuotas", 1)
+                            # Opções: vazio (0) ou 1-24
+                            quotas_options = [""] + [str(i) for i in range(1, 25)]
 
-                            trans_quotas = st.number_input(
+                            default_quotas_index = 0  # Vazio por padrão
+                            if prefill_trans and prefill_trans.get("payment_fields"):
+                                quotas_from_prefill = prefill_trans["payment_fields"].get("numberOfQuotas")
+                                if quotas_from_prefill and 1 <= quotas_from_prefill <= 24:
+                                    default_quotas_index = quotas_from_prefill
+
+                            trans_quotas_str = st.selectbox(
                                 "numberOfQuotas *",
-                                min_value=1,
-                                max_value=24,
-                                value=int(default_quotas),
-                                key=f"quotas_{idx}"
+                                quotas_options,
+                                index=default_quotas_index,
+                                key=f"quotas_{idx}",
+                                help="Selecione entre 1 e 24 parcelas"
                             )
+
+                            # Converter para inteiro (0 se vazio)
+                            trans_quotas = int(trans_quotas_str) if trans_quotas_str else 0
                         else:
                             trans_quotas = None
 
@@ -853,6 +869,11 @@ if transaction_type:
                     if trans["type"] in ["DEBITO", "CREDITO"]:
                         if not trans.get("authorization_code"):
                             st.error(f"⚠️ Transação {i+1}: Preencha authorization_code!")
+                            all_valid = False
+
+                    if trans["type"] == "CREDITO":
+                        if not trans.get("number_of_quotas") or trans.get("number_of_quotas") == 0:
+                            st.error(f"⚠️ Transação {i+1}: Preencha numberOfQuotas!")
                             all_valid = False
 
             if all_valid:
