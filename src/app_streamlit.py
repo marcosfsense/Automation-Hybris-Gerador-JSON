@@ -1266,14 +1266,30 @@ if st.session_state.json_generated and st.session_state.generated_result:
 
     # Botão de ação
     st.markdown("### 💾 Ações:")
-    # Botão de download
-    st.download_button(
-        label="📥 Baixar JSON",
-        data=result,
-        file_name=f"hybris_{result_obj['number']}.json",
-        mime="application/json",
-        use_container_width=True
-    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        # Botão de download
+        st.download_button(
+            label="📥 Baixar JSON",
+            data=result,
+            file_name=f"hybris_{result_obj['number']}.json",
+            mime="application/json",
+            use_container_width=True
+        )
+
+    with col2:
+        # Botão Clear All
+        if st.button("🔄 Limpar Tudo", use_container_width=True):
+            # Resetar session state
+            st.session_state.json_generated = False
+            st.session_state.generated_result = None
+            st.session_state.generated_result_obj = None
+            st.session_state.previous_transaction_type = ""
+
+            # Reexecutar página para mostrar formulário vazio
+            st.rerun()
 
     # Instruções finais
     st.info("💡 **Próximos passos:** Use o JSON copiado ou baixado no Postman para enviar à API Hybris.")
