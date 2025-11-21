@@ -391,8 +391,18 @@ st.subheader("2️⃣ Tipo de Transação")
 transaction_type = st.selectbox(
     "Selecione o tipo de transação:",
     ["", "PIX", "DEBITO", "CREDITO", "MULTIPLAS"],
-    help="Escolha o tipo de pagamento que será vinculado"
+    help="Escolha o tipo de pagamento que será vinculado",
+    key="transaction_type_select"
 )
+
+# Se mudou o tipo de transação, resetar flag de JSON gerado
+if 'previous_transaction_type' not in st.session_state:
+    st.session_state.previous_transaction_type = transaction_type
+elif st.session_state.previous_transaction_type != transaction_type:
+    st.session_state.json_generated = False
+    st.session_state.generated_result = None
+    st.session_state.generated_result_obj = None
+    st.session_state.previous_transaction_type = transaction_type
 
 st.markdown("---")
 
@@ -401,6 +411,14 @@ transactions_data = []
 result_json = None
 error_message = None
 prefill_data = None  # Inicializar prefill_data (removida seção 2.1)
+
+# Inicializar session_state para controlar regeneração
+if 'json_generated' not in st.session_state:
+    st.session_state.json_generated = False
+if 'generated_result' not in st.session_state:
+    st.session_state.generated_result = None
+if 'generated_result_obj' not in st.session_state:
+    st.session_state.generated_result_obj = None
 
 # SEÇÃO 3: CAMPOS ESPECÍFICOS POR TIPO
 if transaction_type:
@@ -1077,11 +1095,9 @@ if transaction_type:
             if all_valid:
                 transactions_data = temp_transactions
 
-# PROCESSAR E GERAR JSON
-if transactions_data:
-    st.markdown("---")
-    st.subheader("4️⃣ Resultado")
-
+# GERAR JSON (quando há dados a consolidar)
+# Esta seção processa e gera o JSON, armazenando em session_state
+if transactions_data and not st.session_state.json_generated:
     try:
         # Parse do cabeçalho
         if not header_json_str.strip():
@@ -1123,48 +1139,61 @@ if transactions_data:
                     for error in result.get("validation_errors", []):
                         st.error(f"  • {error}")
                 else:
-                    # Parse do resultado
+                    # Armazenar resultado em session_state
                     result_obj = json.loads(result)
-
-                    # Mostrar sucesso
-                    st.success("✅ JSON gerado com sucesso!")
-
-                    # Informações do resultado
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Número do Pedido", result_obj["number"])
-                    with col2:
-                        st.metric("Total de Transações", len(result_obj["transactions"]))
-                    with col3:
-                        st.metric("Valor Total", f"R$ {result_obj['price']/100:.2f}")
-
-                    st.markdown("---")
-
-                    # JSON formatado
-                    st.markdown("### 📄 JSON Gerado:")
-                    st.code(result, language="json", line_numbers=True)
-
-                    # Botão de ação
-                    st.markdown("### 💾 Ações:")
-                    # Botão de download
-                    st.download_button(
-                        label="📥 Baixar JSON",
-                        data=result,
-                        file_name=f"hybris_{result_obj['number']}.json",
-                        mime="application/json",
-                        use_container_width=True
-                    )
-
-                    # Instruções finais
-                    st.info("💡 **Próximos passos:** Use o JSON copiado ou baixado no Postman para enviar à API Hybris.")
+                    st.session_state.generated_result = result
+                    st.session_state.generated_result_obj = result_obj
+                    st.session_state.json_generated = True
+                    st.rerun()  # Reexecuta a página para mostrar resultado
 
     except json.JSONDecodeError as e:
         st.error(f"❌ Erro ao fazer parse do JSON do cabeçalho: {str(e)}")
         st.info("💡 Verifique se o JSON colado está no formato correto.")
-
     except Exception as e:
         st.error(f"❌ Erro ao gerar JSON: {str(e)}")
         st.exception(e)
+
+# MOSTRAR RESULTADO ARMAZENADO
+# Mostrar resultado apenas se JSON já foi gerado (evita regeneração ao editar transações)
+if st.session_state.json_generated and st.session_state.generated_result:
+    st.markdown("---")
+    st.subheader("4️⃣ Resultado (Consolidado)")
+
+    # Usar resultado armazenado em session_state (não regenerar)
+    result = st.session_state.generated_result
+    result_obj = st.session_state.generated_result_obj
+
+    # Mostrar sucesso
+    st.success("✅ JSON gerado com sucesso!")
+
+    # Informações do resultado
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Número do Pedido", result_obj["number"])
+    with col2:
+        st.metric("Total de Transações", len(result_obj["transactions"]))
+    with col3:
+        st.metric("Valor Total", f"R$ {result_obj['price']/100:.2f}")
+
+    st.markdown("---")
+
+    # JSON formatado
+    st.markdown("### 📄 JSON Gerado:")
+    st.code(result, language="json", line_numbers=True)
+
+    # Botão de ação
+    st.markdown("### 💾 Ações:")
+    # Botão de download
+    st.download_button(
+        label="📥 Baixar JSON",
+        data=result,
+        file_name=f"hybris_{result_obj['number']}.json",
+        mime="application/json",
+        use_container_width=True
+    )
+
+    # Instruções finais
+    st.info("💡 **Próximos passos:** Use o JSON copiado ou baixado no Postman para enviar à API Hybris.")
 
 # Footer
 st.markdown("---")
