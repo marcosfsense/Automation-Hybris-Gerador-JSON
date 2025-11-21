@@ -19,6 +19,117 @@ from hybris_json_generator import HybrisJSONGenerator  # Classe geradora do JSON
 # FUNÇÃO HELPER - Extrair transação de diferentes formatos Hybris
 # ═══════════════════════════════════════════════════════════════════════
 
+def validate_header_json(header_data: dict) -> tuple[bool, list]:
+    """
+    Valida se o JSON do cabeçalho tem os campos obrigatórios.
+
+    Args:
+        header_data: Dicionário com dados do cabeçalho
+
+    Returns:
+        (is_valid: bool, errors: list of strings)
+    """
+    errors = []
+
+    if not header_data:
+        return False, ["Header vazio ou não carregado"]
+
+    # Campos obrigatórios do cabeçalho
+    if not header_data.get("id"):
+        errors.append("'id' é obrigatório no cabeçalho")
+
+    if not header_data.get("price") and header_data.get("price") != 0:
+        errors.append("'price' é obrigatório no cabeçalho")
+
+    if not header_data.get("number"):
+        errors.append("'number' é obrigatório no cabeçalho")
+
+    if not header_data.get("items") or not isinstance(header_data["items"], list):
+        errors.append("'items' é obrigatório no cabeçalho (deve ser um array)")
+
+    if not header_data.get("created_at"):
+        errors.append("'created_at' é obrigatório no cabeçalho")
+
+    if not header_data.get("updated_at"):
+        errors.append("'updated_at' é obrigatório no cabeçalho")
+
+    return len(errors) == 0, errors
+
+
+def validate_json_transaction(trans_data: dict, trans_type: str = None) -> tuple[bool, list]:
+    """
+    Valida se o JSON colado tem os campos obrigatórios.
+
+    Args:
+        trans_data: Dicionário com dados da transação
+        trans_type: Tipo esperado (PIX, DEBITO, CREDITO) ou None para auto-detectar
+
+    Returns:
+        (is_valid: bool, errors: list of strings)
+    """
+    errors = []
+
+    if not trans_data:
+        return False, ["JSON vazio ou não carregado"]
+
+    # Campos universalmente obrigatórios
+    if not trans_data.get("amount") and trans_data.get("amount") != 0:
+        errors.append("'amount' é obrigatório")
+
+    if not trans_data.get("number"):
+        errors.append("'number' é obrigatório")
+
+    # Detectar tipo se não informado
+    if not trans_type:
+        if "payment_fields" in trans_data:
+            product_code = trans_data["payment_fields"].get("primaryProductCode")
+            if product_code == 25:
+                trans_type = "PIX"
+            elif product_code == 2000:
+                trans_type = "DEBITO"
+            elif product_code == 1000:
+                trans_type = "CREDITO"
+
+    # Validação por tipo
+    if trans_type == "PIX":
+        if not trans_data.get("payment_fields"):
+            errors.append("'payment_fields' é obrigatório para PIX")
+        elif not trans_data["payment_fields"].get("merchantName"):
+            errors.append("'payment_fields.merchantName' é obrigatório para PIX")
+
+    elif trans_type == "DEBITO":
+        if not trans_data.get("card"):
+            errors.append("'card' é obrigatório para DÉBITO")
+        elif not trans_data["card"].get("mask") or not trans_data["card"].get("brand"):
+            errors.append("'card.mask' e 'card.brand' são obrigatórios para DÉBITO")
+
+        if not trans_data.get("authorization_code"):
+            errors.append("'authorization_code' é obrigatório para DÉBITO")
+
+        if not trans_data.get("payment_fields"):
+            errors.append("'payment_fields' é obrigatório para DÉBITO")
+        elif not trans_data["payment_fields"].get("merchantName"):
+            errors.append("'payment_fields.merchantName' é obrigatório para DÉBITO")
+
+    elif trans_type == "CREDITO":
+        if not trans_data.get("card"):
+            errors.append("'card' é obrigatório para CRÉDITO")
+        elif not trans_data["card"].get("mask") or not trans_data["card"].get("brand"):
+            errors.append("'card.mask' e 'card.brand' são obrigatórios para CRÉDITO")
+
+        if not trans_data.get("authorization_code"):
+            errors.append("'authorization_code' é obrigatório para CRÉDITO")
+
+        if not trans_data.get("payment_fields"):
+            errors.append("'payment_fields' é obrigatório para CRÉDITO")
+        elif not trans_data["payment_fields"].get("merchantName"):
+            errors.append("'payment_fields.merchantName' é obrigatório para CRÉDITO")
+        elif not trans_data["payment_fields"].get("numberOfQuotas"):
+            errors.append("'payment_fields.numberOfQuotas' é obrigatório para CRÉDITO")
+
+    return len(errors) == 0, errors
+
+
 def normalize_amount_from_json(amount_value) -> float:
     """
     Normaliza o amount para Reais quando vem do JSON (centavos).
@@ -339,7 +450,16 @@ if transaction_type:
                     # Normalizar amount: converter centavos para Reais se necessário
                     if prefill_pix_json and "amount" in prefill_pix_json:
                         prefill_pix_json["amount"] = normalize_amount_from_json(prefill_pix_json["amount"])
-                    st.success("✅ Transação carregada com sucesso!")
+
+                    # Validar se tem campos obrigatórios
+                    is_valid, errors = validate_json_transaction(prefill_pix_json, "PIX")
+                    if not is_valid:
+                        st.warning("⚠️ JSON tem problemas:")
+                        for error in errors:
+                            st.warning(f"  • {error}")
+                        prefill_pix_json = None
+                    else:
+                        st.success("✅ Transação carregada com sucesso!")
                 except json.JSONDecodeError as e:
                     st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
                     prefill_pix_json = None
@@ -462,7 +582,16 @@ if transaction_type:
                     # Normalizar amount: converter centavos para Reais se necessário
                     if prefill_deb_json and "amount" in prefill_deb_json:
                         prefill_deb_json["amount"] = normalize_amount_from_json(prefill_deb_json["amount"])
-                    st.success("✅ Transação carregada com sucesso!")
+
+                    # Validar se tem campos obrigatórios
+                    is_valid, errors = validate_json_transaction(prefill_deb_json, "DEBITO")
+                    if not is_valid:
+                        st.warning("⚠️ JSON tem problemas:")
+                        for error in errors:
+                            st.warning(f"  • {error}")
+                        prefill_deb_json = None
+                    else:
+                        st.success("✅ Transação carregada com sucesso!")
                 except json.JSONDecodeError as e:
                     st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
                     prefill_deb_json = None
@@ -589,7 +718,16 @@ if transaction_type:
                     # Normalizar amount: converter centavos para Reais se necessário
                     if prefill_cred_json and "amount" in prefill_cred_json:
                         prefill_cred_json["amount"] = normalize_amount_from_json(prefill_cred_json["amount"])
-                    st.success("✅ Transação carregada com sucesso!")
+
+                    # Validar se tem campos obrigatórios
+                    is_valid, errors = validate_json_transaction(prefill_cred_json, "CREDITO")
+                    if not is_valid:
+                        st.warning("⚠️ JSON tem problemas:")
+                        for error in errors:
+                            st.warning(f"  • {error}")
+                        prefill_cred_json = None
+                    else:
+                        st.success("✅ Transação carregada com sucesso!")
                 except json.JSONDecodeError as e:
                     st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
                     prefill_cred_json = None
@@ -762,7 +900,16 @@ if transaction_type:
                             # Normalizar amount: converter centavos para Reais se necessário
                             if prefill_trans and "amount" in prefill_trans:
                                 prefill_trans["amount"] = normalize_amount_from_json(prefill_trans["amount"])
-                            st.success(f"✅ Transação {idx+1} carregada com sucesso!")
+
+                            # Validar se tem campos obrigatórios (auto-detectar tipo)
+                            is_valid, errors = validate_json_transaction(prefill_trans)
+                            if not is_valid:
+                                st.warning(f"⚠️ Transação {idx+1} tem problemas:")
+                                for error in errors:
+                                    st.warning(f"  • {error}")
+                                prefill_trans = None
+                            else:
+                                st.success(f"✅ Transação {idx+1} carregada com sucesso!")
                         except json.JSONDecodeError as e:
                             st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
                             prefill_trans = None
@@ -955,54 +1102,61 @@ if transactions_data:
             # Forçar silenciosamente o status do cabeçalho para "PAID"
             header_json["status"] = "PAID"
 
-            # Gerar JSON
-            generator = HybrisJSONGenerator()
-            result = generator.generate_json_with_header(
-                header_json=header_json,
-                transaction_type=transaction_type,
-                transactions_data=transactions_data
-            )
-
-            # Verificar se houve erro
-            if isinstance(result, dict) and not result.get("success", True):
-                st.error("❌ Erro na validação:")
-                for error in result.get("validation_errors", []):
+            # Validar se o header tem campos obrigatórios
+            is_valid, errors = validate_header_json(header_json)
+            if not is_valid:
+                st.error("❌ Cabeçalho tem problemas:")
+                for error in errors:
                     st.error(f"  • {error}")
             else:
-                # Parse do resultado
-                result_obj = json.loads(result)
-
-                # Mostrar sucesso
-                st.success("✅ JSON gerado com sucesso!")
-
-                # Informações do resultado
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("Número do Pedido", result_obj["number"])
-                with col2:
-                    st.metric("Total de Transações", len(result_obj["transactions"]))
-                with col3:
-                    st.metric("Valor Total", f"R$ {result_obj['price']/100:.2f}")
-
-                st.markdown("---")
-
-                # JSON formatado
-                st.markdown("### 📄 JSON Gerado:")
-                st.code(result, language="json", line_numbers=True)
-
-                # Botão de ação
-                st.markdown("### 💾 Ações:")
-                # Botão de download
-                st.download_button(
-                    label="📥 Baixar JSON",
-                    data=result,
-                    file_name=f"hybris_{result_obj['number']}.json",
-                    mime="application/json",
-                    use_container_width=True
+                # Gerar JSON
+                generator = HybrisJSONGenerator()
+                result = generator.generate_json_with_header(
+                    header_json=header_json,
+                    transaction_type=transaction_type,
+                    transactions_data=transactions_data
                 )
 
-                # Instruções finais
-                st.info("💡 **Próximos passos:** Use o JSON copiado ou baixado no Postman para enviar à API Hybris.")
+                # Verificar se houve erro
+                if isinstance(result, dict) and not result.get("success", True):
+                    st.error("❌ Erro na validação:")
+                    for error in result.get("validation_errors", []):
+                        st.error(f"  • {error}")
+                else:
+                    # Parse do resultado
+                    result_obj = json.loads(result)
+
+                    # Mostrar sucesso
+                    st.success("✅ JSON gerado com sucesso!")
+
+                    # Informações do resultado
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Número do Pedido", result_obj["number"])
+                    with col2:
+                        st.metric("Total de Transações", len(result_obj["transactions"]))
+                    with col3:
+                        st.metric("Valor Total", f"R$ {result_obj['price']/100:.2f}")
+
+                    st.markdown("---")
+
+                    # JSON formatado
+                    st.markdown("### 📄 JSON Gerado:")
+                    st.code(result, language="json", line_numbers=True)
+
+                    # Botão de ação
+                    st.markdown("### 💾 Ações:")
+                    # Botão de download
+                    st.download_button(
+                        label="📥 Baixar JSON",
+                        data=result,
+                        file_name=f"hybris_{result_obj['number']}.json",
+                        mime="application/json",
+                        use_container_width=True
+                    )
+
+                    # Instruções finais
+                    st.info("💡 **Próximos passos:** Use o JSON copiado ou baixado no Postman para enviar à API Hybris.")
 
     except json.JSONDecodeError as e:
         st.error(f"❌ Erro ao fazer parse do JSON do cabeçalho: {str(e)}")
