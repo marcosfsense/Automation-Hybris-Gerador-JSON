@@ -19,6 +19,45 @@ from hybris_json_generator import HybrisJSONGenerator  # Classe geradora do JSON
 # FUNÇÃO HELPER - Extrair transação de diferentes formatos Hybris
 # ═══════════════════════════════════════════════════════════════════════
 
+def normalize_amount_from_json(amount_value) -> float:
+    """
+    Normaliza o amount para Reais quando vem do JSON (centavos).
+
+    O Hybris sempre envia amount em centavos (inteiro).
+    O app trabalha com Reais (decimal).
+
+    Args:
+        amount_value: Valor em centavos (int) ou já em Reais (float)
+
+    Returns:
+        Valor normalizado em Reais (float)
+    """
+    if amount_value is None:
+        return 0.0
+
+    # Se for inteiro > 100, provavelmente é centavos (ex: 284050 = R$ 2840.50)
+    # Se for inteiro < 100 ou float, provavelmente já é Reais
+    if isinstance(amount_value, int):
+        if amount_value > 100:
+            # Converter centavos para Reais
+            return amount_value / 100
+        else:
+            # Pequeno valor em centavos ou outra unidade
+            return float(amount_value)
+    elif isinstance(amount_value, float):
+        # Já é float, provavelmente em Reais
+        return amount_value
+    else:
+        # Tentar converter string
+        try:
+            val = float(amount_value)
+            if val > 100:
+                return val / 100
+            return val
+        except (ValueError, TypeError):
+            return 0.0
+
+
 def extract_transaction_from_hybris(data: dict) -> dict:
     """
     Extrai a transação de diferentes formatos que o Hybris pode retornar.
@@ -297,6 +336,9 @@ if transaction_type:
                     json_loaded = json.loads(pix_json_str.strip())
                     # Extrair transação de diferentes formatos Hybris
                     prefill_pix_json = extract_transaction_from_hybris(json_loaded)
+                    # Normalizar amount: converter centavos para Reais se necessário
+                    if prefill_pix_json and "amount" in prefill_pix_json:
+                        prefill_pix_json["amount"] = normalize_amount_from_json(prefill_pix_json["amount"])
                     st.success("✅ Transação carregada com sucesso!")
                 except json.JSONDecodeError as e:
                     st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
@@ -417,6 +459,9 @@ if transaction_type:
                     json_loaded = json.loads(deb_json_str.strip())
                     # Extrair transação de diferentes formatos Hybris
                     prefill_deb_json = extract_transaction_from_hybris(json_loaded)
+                    # Normalizar amount: converter centavos para Reais se necessário
+                    if prefill_deb_json and "amount" in prefill_deb_json:
+                        prefill_deb_json["amount"] = normalize_amount_from_json(prefill_deb_json["amount"])
                     st.success("✅ Transação carregada com sucesso!")
                 except json.JSONDecodeError as e:
                     st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
@@ -541,6 +586,9 @@ if transaction_type:
                     json_loaded = json.loads(cred_json_str.strip())
                     # Extrair transação de diferentes formatos Hybris
                     prefill_cred_json = extract_transaction_from_hybris(json_loaded)
+                    # Normalizar amount: converter centavos para Reais se necessário
+                    if prefill_cred_json and "amount" in prefill_cred_json:
+                        prefill_cred_json["amount"] = normalize_amount_from_json(prefill_cred_json["amount"])
                     st.success("✅ Transação carregada com sucesso!")
                 except json.JSONDecodeError as e:
                     st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
@@ -711,6 +759,9 @@ if transaction_type:
                             json_loaded = json.loads(existing_trans_str.strip())
                             # Extrair transação de diferentes formatos Hybris
                             prefill_trans = extract_transaction_from_hybris(json_loaded)
+                            # Normalizar amount: converter centavos para Reais se necessário
+                            if prefill_trans and "amount" in prefill_trans:
+                                prefill_trans["amount"] = normalize_amount_from_json(prefill_trans["amount"])
                             st.success(f"✅ Transação {idx+1} carregada com sucesso!")
                         except json.JSONDecodeError as e:
                             st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
