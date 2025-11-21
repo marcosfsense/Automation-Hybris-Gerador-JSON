@@ -880,6 +880,9 @@ if transactions_data:
 
             header_json = json.loads(cleaned_json)
 
+            # Forçar silenciosamente o status do cabeçalho para "PAID"
+            header_json["status"] = "PAID"
+
             # Gerar JSON
             generator = HybrisJSONGenerator()
             result = generator.generate_json_with_header(
