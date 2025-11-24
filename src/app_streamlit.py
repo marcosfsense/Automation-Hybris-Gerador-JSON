@@ -541,20 +541,23 @@ if transaction_type:
 
             transactions_data = [trans_data]
 
-        # Botão para gerar
-        if st.button("🚀 Gerar JSON", type="primary"):
-            if pix_has_existing == "Sim":
-                # JSON colado - validar apenas número
-                if not transactions_data or not transactions_data[0].get("number"):
-                    st.error("⚠️ JSON colado precisa ter 'number'!")
-                else:
-                    transactions_data = [transactions_data[0]]
-            else:
+            # Botão para gerar
+            if st.button("🚀 Gerar JSON", type="primary"):
                 # Formulário manual - validar campos
                 if not pix_number or not pix_merchant_name:
                     st.error("⚠️ Por favor, preencha todos os campos obrigatórios!")
                 else:
                     transactions_data = [trans_data]
+
+        # Bloco para JSON colado
+        if pix_has_existing == "Sim":
+            # Botão para gerar (quando JSON colado)
+            if st.button("🚀 Gerar JSON", type="primary", key="pix_gerar_json"):
+                # JSON colado - validar apenas número
+                if not transactions_data or not transactions_data[0].get("number"):
+                    st.error("⚠️ JSON colado precisa ter 'number'!")
+                else:
+                    transactions_data = [transactions_data[0]]
 
     # ==================== DÉBITO ====================
     elif transaction_type == "DEBITO":
@@ -677,20 +680,23 @@ if transaction_type:
 
             transactions_data = [trans_data]
 
-        # Botão para gerar
-        if st.button("🚀 Gerar JSON", type="primary"):
-            if deb_has_existing == "Sim":
-                # JSON colado - validar apenas número
-                if not transactions_data or not transactions_data[0].get("number"):
-                    st.error("⚠️ JSON colado precisa ter 'number'!")
-                else:
-                    transactions_data = [transactions_data[0]]
-            else:
+            # Botão para gerar
+            if st.button("🚀 Gerar JSON", type="primary"):
                 # Formulário manual - validar campos
                 if not all([deb_number, deb_merchant_name, deb_auth_code]):
                     st.error("⚠️ Por favor, preencha todos os campos obrigatórios!")
                 else:
                     transactions_data = [trans_data]
+
+        # Bloco para JSON colado
+        if deb_has_existing == "Sim":
+            # Botão para gerar (quando JSON colado)
+            if st.button("🚀 Gerar JSON", type="primary", key="deb_gerar_json"):
+                # JSON colado - validar apenas número
+                if not transactions_data or not transactions_data[0].get("number"):
+                    st.error("⚠️ JSON colado precisa ter 'number'!")
+                else:
+                    transactions_data = [transactions_data[0]]
 
     # ==================== CRÉDITO ====================
     elif transaction_type == "CREDITO":
@@ -835,20 +841,23 @@ if transaction_type:
 
             transactions_data = [trans_data]
 
-        # Botão para gerar
-        if st.button("🚀 Gerar JSON", type="primary"):
-            if cred_has_existing == "Sim":
-                # JSON colado - validar apenas número
-                if not transactions_data or not transactions_data[0].get("number"):
-                    st.error("⚠️ JSON colado precisa ter 'number'!")
-                else:
-                    transactions_data = [transactions_data[0]]
-            else:
+            # Botão para gerar
+            if st.button("🚀 Gerar JSON", type="primary"):
                 # Formulário manual - validar campos
                 if not all([cred_number, cred_merchant_name, cred_auth_code]) or cred_quotas == 0:
                     st.error("⚠️ Por favor, preencha todos os campos obrigatórios (incluindo numberOfQuotas)!")
                 else:
                     transactions_data = [trans_data]
+
+        # Bloco para JSON colado
+        if cred_has_existing == "Sim":
+            # Botão para gerar (quando JSON colado)
+            if st.button("🚀 Gerar JSON", type="primary", key="cred_gerar_json"):
+                # JSON colado - validar apenas número
+                if not transactions_data or not transactions_data[0].get("number"):
+                    st.error("⚠️ JSON colado precisa ter 'number'!")
+                else:
+                    transactions_data = [transactions_data[0]]
 
     # ==================== MÚLTIPLAS TRANSAÇÕES ====================
     elif transaction_type == "MULTIPLAS":
