@@ -380,7 +380,8 @@ OU (com vírgula no final também funciona):
   ...
   "updated_at": "2022-09-09T14:58:12Z",
 """,
-    help="Cole até antes de 'transactions'. Pode ter vírgula no final - o sistema corrige."
+    help="Cole até antes de 'transactions'. Pode ter vírgula no final - o sistema corrige.",
+    key="header_json_input"
 )
 
 st.markdown("---")
@@ -1282,11 +1283,39 @@ if st.session_state.json_generated and st.session_state.generated_result:
     with col2:
         # Botão Clear All
         if st.button("🔄 Limpar Tudo", use_container_width=True):
-            # Resetar session state
+            # Resetar todos os widgets e session state
             st.session_state.json_generated = False
             st.session_state.generated_result = None
             st.session_state.generated_result_obj = None
             st.session_state.previous_transaction_type = ""
+
+            # Resetar campos principais
+            st.session_state.header_json_input = ""
+            st.session_state.transaction_type_select = ""
+
+            # Resetar campos de PIX
+            st.session_state.pix_has_existing = "Não"
+            st.session_state.pix_json_input = ""
+
+            # Resetar campos de DÉBITO
+            st.session_state.deb_has_existing = "Não"
+            st.session_state.deb_json_input = ""
+
+            # Resetar campos de CRÉDITO
+            st.session_state.cred_has_existing = "Não"
+            st.session_state.cred_json_input = ""
+
+            # Resetar MÚLTIPLAS
+            st.session_state.multi_transactions = []
+
+            # Resetar todos os campos de input numéricos e texto (wildcards)
+            keys_to_clear = [k for k in st.session_state.keys() if any(
+                x in k for x in ['pix_', 'deb_', 'cred_', 'amount_', 'number_',
+                                'merchant_', 'auth_', 'quotas_', 'type_', 'has_existing_',
+                                'existing_trans_']
+            )]
+            for key in keys_to_clear:
+                st.session_state[key] = None
 
             # Reexecutar página para mostrar formulário vazio
             st.rerun()
