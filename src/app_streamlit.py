@@ -380,8 +380,7 @@ OU (com vírgula no final também funciona):
   ...
   "updated_at": "2022-09-09T14:58:12Z",
 """,
-    help="Cole até antes de 'transactions'. Pode ter vírgula no final - o sistema corrige.",
-    key="header_json_input"
+    help="Cole até antes de 'transactions'. Pode ter vírgula no final - o sistema corrige."
 )
 
 st.markdown("---")
@@ -498,7 +497,8 @@ if transaction_type:
                     value=prefill_pix.get("amount", 0.0) / 100 if prefill_pix else 0.00,
                     step=0.01,
                     format="%.2f",
-                    help="Valor da transação em Reais"
+                    help="Valor da transação em Reais",
+                    key="pix_amount_input"
                 )
 
                 pix_number = st.text_input(
@@ -629,7 +629,8 @@ if transaction_type:
                     min_value=0.00,
                     value=prefill_deb.get("amount", 0.0) / 100 if prefill_deb else 0.00,
                     step=0.01,
-                    format="%.2f"
+                    format="%.2f",
+                    key="deb_amount_input"
                 )
 
                 deb_number = st.text_input(
@@ -765,7 +766,8 @@ if transaction_type:
                     min_value=0.00,
                     value=prefill_cred.get("amount", 0.0) / 100 if prefill_cred else 0.00,
                     step=0.01,
-                    format="%.2f"
+                    format="%.2f",
+                    key="cred_amount_input"
                 )
 
                 cred_number = st.text_input(
@@ -1283,39 +1285,12 @@ if st.session_state.json_generated and st.session_state.generated_result:
     with col2:
         # Botão Clear All
         if st.button("🔄 Limpar Tudo", use_container_width=True):
-            # Resetar todos os widgets e session state
+            # Resetar APENAS o session state de geração
+            # (Os widgets vão recriar com valores padrão automaticamente)
             st.session_state.json_generated = False
             st.session_state.generated_result = None
             st.session_state.generated_result_obj = None
             st.session_state.previous_transaction_type = ""
-
-            # Resetar campos principais
-            st.session_state.header_json_input = ""
-            st.session_state.transaction_type_select = ""
-
-            # Resetar campos de PIX
-            st.session_state.pix_has_existing = "Não"
-            st.session_state.pix_json_input = ""
-
-            # Resetar campos de DÉBITO
-            st.session_state.deb_has_existing = "Não"
-            st.session_state.deb_json_input = ""
-
-            # Resetar campos de CRÉDITO
-            st.session_state.cred_has_existing = "Não"
-            st.session_state.cred_json_input = ""
-
-            # Resetar MÚLTIPLAS
-            st.session_state.multi_transactions = []
-
-            # Resetar todos os campos de input numéricos e texto (wildcards)
-            keys_to_clear = [k for k in st.session_state.keys() if any(
-                x in k for x in ['pix_', 'deb_', 'cred_', 'amount_', 'number_',
-                                'merchant_', 'auth_', 'quotas_', 'type_', 'has_existing_',
-                                'existing_trans_']
-            )]
-            for key in keys_to_clear:
-                st.session_state[key] = None
 
             # Reexecutar página para mostrar formulário vazio
             st.rerun()
