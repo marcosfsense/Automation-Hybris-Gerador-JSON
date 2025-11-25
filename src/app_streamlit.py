@@ -473,7 +473,8 @@ OU (com vírgula no final também funciona):
   ...
   "updated_at": "2022-09-09T14:58:12Z",
 """,
-    help="Cole até antes de 'transactions'. Pode ter vírgula no final - o sistema corrige."
+    help="Cole até antes de 'transactions'. Pode ter vírgula no final - o sistema corrige.",
+    key="header_json_input"
 )
 
 st.markdown("---")
@@ -1419,9 +1420,12 @@ if st.session_state.json_generated and st.session_state.generated_result:
             st.session_state.last_header_json_hash = None
 
             # Limpar também o selectbox de tipo de transação
-            # (usando key específica definida na linha 395)
             if "transaction_type_select" in st.session_state:
                 del st.session_state.transaction_type_select
+
+            # Limpar também o text_area do header JSON
+            if "header_json_input" in st.session_state:
+                del st.session_state.header_json_input
 
             # Reexecutar página para mostrar formulário vazio
             st.rerun()
