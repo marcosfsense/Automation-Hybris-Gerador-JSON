@@ -10,7 +10,8 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\n✨ Implementar 5 soluções de instalação Python para usuários finais\n\n🎯 Melhorias:\n- Instalador automático Python (instalar_python.bat)\n- Validação automática no launcher (executar_app.bat melhorado)\n- Guia completo de instalação (docs/GUIA_INSTALACAO_PYTHON.md)\n- Executável portátil sem Python (criar_executavel.bat)\n- Documentação de soluções e checklist\n\n📊 Impacto:\n- 90% redução no tempo de setup (30-45 min → 3-5 min)\n- 35% aumento na taxa de sucesso (60% → 95%)\n- 87% redução em erros de PATH (40% → 5%)\n- 80% redução em tickets de suporte\n\n📁 Arquivos criados/modificados:\n- instalar_python.bat (novo)\n- executar_app.bat (melhorado)\n- criar_executavel.bat (novo)\n- COMECE_AQUI.txt (novo)\n- SOLUCOES_INSTALACAO.md (novo)\n- RESUMO_MELHORIAS_INSTALACAO.md (novo)\n- CHECKLIST_INSTALACAO.md (novo)\n- docs/GUIA_INSTALACAO_PYTHON.md (novo)\n- README.md (atualizado com novas opções)\n\n🎯 Público:\n- Usuários Windows (instalador automático)\n- Usuários Mac/Linux (guia passo-a-passo)\n- Administradores (executável portátil)\n- Desenvolvedores (múltiplas opções)\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git commit:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(iconv:*)"
     ],
     "deny": [],
     "ask": []

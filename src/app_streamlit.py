@@ -539,8 +539,6 @@ if transaction_type:
             if prefill_pix and prefill_pix.get("payment_fields"):
                 trans_data["preserve_payment_fields"] = prefill_pix["payment_fields"]
 
-            transactions_data = [trans_data]
-
             # Botão para gerar
             if st.button("🚀 Gerar JSON", type="primary"):
                 # Formulário manual - validar campos
@@ -677,8 +675,6 @@ if transaction_type:
                     trans_data["preserve_card"] = prefill_deb["card"]
                 if prefill_deb.get("external_id"):
                     trans_data["preserve_external_id"] = prefill_deb["external_id"]
-
-            transactions_data = [trans_data]
 
             # Botão para gerar
             if st.button("🚀 Gerar JSON", type="primary"):
@@ -838,8 +834,6 @@ if transaction_type:
                     trans_data["preserve_card"] = prefill_cred["card"]
                 if prefill_cred.get("external_id"):
                     trans_data["preserve_external_id"] = prefill_cred["external_id"]
-
-            transactions_data = [trans_data]
 
             # Botão para gerar
             if st.button("🚀 Gerar JSON", type="primary"):
