@@ -12,6 +12,7 @@ Executar com: streamlit run app_streamlit.py
 import streamlit as st              # Framework web para criar a interface
 import json                         # Biblioteca para manipular JSON
 import os                           # Funções do sistema operacional
+import hashlib                      # Hash para detectar mudanças
 from pathlib import Path            # Trabalhar com caminhos de arquivos
 from hybris_json_generator import HybrisJSONGenerator  # Classe geradora do JSON
 
@@ -167,6 +168,98 @@ def normalize_amount_from_json(amount_value) -> float:
             return val
         except (ValueError, TypeError):
             return 0.0
+
+
+def try_fix_incomplete_json(json_str: str) -> str:
+    """
+    Tenta corrigir JSONs incompletos ou mal formados.
+
+    Estratégias:
+    1. Remove símbolos extras no final (] } etc)
+    2. Se não começa com {, adiciona
+    3. Se não termina com }, adiciona
+    4. Remove vírgula final antes de adicionar }
+    5. Tenta várias combinações de chaves de fechamento
+
+    Args:
+        json_str: String JSON potencialmente incompleta ou mal formada
+
+    Returns:
+        String JSON corrigida (ou original se não conseguir)
+    """
+    json_str = json_str.strip()
+
+    # Se JSON está vazio, retorna
+    if not json_str:
+        return json_str
+
+    # Estratégia PRÉ-0: Corrigir estrutura básica (adicionar { se falta)
+    original_json_str = json_str
+
+    # Primeiro: adicionar { no início se não houver
+    if not json_str.startswith('{'):
+        json_str = '{\n' + json_str
+
+    # Segundo: encontrar a posição do primeiro } que fecha o objeto raiz
+    # e remover tudo após ele
+    brace_count = 0
+    last_valid_brace_pos = -1
+
+    for i, char in enumerate(json_str):
+        if char == '{':
+            brace_count += 1
+        elif char == '}':
+            brace_count -= 1
+            if brace_count == 0:
+                # Encontrou o fechamento do objeto raiz
+                last_valid_brace_pos = i + 1
+                break
+
+    if last_valid_brace_pos > 0:
+        json_str = json_str[:last_valid_brace_pos]
+
+    # Se agora está vazio, retorna original
+    if not json_str:
+        return original_json_str
+
+    # Se já está bem formado, retorna
+    if json_str.startswith('{') and json_str.endswith('}'):
+        try:
+            json.loads(json_str)
+            return json_str
+        except json.JSONDecodeError:
+            pass
+
+    # Estratégia 1: Adicionar } no final
+    if not json_str.endswith('}'):
+        if json_str.endswith(','):
+            # Remove vírgula e adiciona }
+            fixed = json_str.rstrip(',').rstrip() + '\n}'
+        else:
+            # Adiciona direto
+            fixed = json_str + '\n}'
+
+        # Tentar fazer parse para validar
+        try:
+            json.loads(fixed)
+            return fixed
+        except json.JSONDecodeError:
+            pass
+
+    # Estratégia 2: Tentar adicionar múltiplos } (para JSONs mais complexos)
+    for num_braces in range(2, 6):
+        fixed = json_str.rstrip(',').rstrip()
+        if not fixed.startswith('{'):
+            fixed = '{\n' + fixed
+        fixed = fixed + '\n' + ('}' * num_braces)
+        try:
+            json.loads(fixed)
+            return fixed
+        except json.JSONDecodeError:
+            pass
+
+    # Se nenhuma estratégia funcionou, retorna original
+    return original_json_str
 
 
 def extract_transaction_from_hybris(data: dict) -> dict:
@@ -419,6 +512,16 @@ if 'generated_result' not in st.session_state:
     st.session_state.generated_result = None
 if 'generated_result_obj' not in st.session_state:
     st.session_state.generated_result_obj = None
+if 'last_header_json_hash' not in st.session_state:
+    st.session_state.last_header_json_hash = None
+
+# Detectar mudanças no header JSON para resetar json_generated
+current_header_hash = hashlib.md5(header_json_str.encode()).hexdigest()
+if st.session_state.last_header_json_hash != current_header_hash:
+    st.session_state.json_generated = False
+    st.session_state.generated_result = None
+    st.session_state.generated_result_obj = None
+    st.session_state.last_header_json_hash = current_header_hash
 
 # SEÇÃO 3: CAMPOS ESPECÍFICOS POR TIPO
 if transaction_type:
@@ -462,7 +565,9 @@ if transaction_type:
             prefill_pix_json = None
             if pix_json_str.strip():
                 try:
-                    json_loaded = json.loads(pix_json_str.strip())
+                    # Tentar corrigir JSON incompleto
+                    cleaned_pix_json = try_fix_incomplete_json(pix_json_str.strip())
+                    json_loaded = json.loads(cleaned_pix_json)
                     # Extrair transação de diferentes formatos Hybris
                     prefill_pix_json = extract_transaction_from_hybris(json_loaded)
                     # Normalizar amount: converter centavos para Reais se necessário
@@ -596,7 +701,9 @@ if transaction_type:
             prefill_deb_json = None
             if deb_json_str.strip():
                 try:
-                    json_loaded = json.loads(deb_json_str.strip())
+                    # Tentar corrigir JSON incompleto
+                    cleaned_deb_json = try_fix_incomplete_json(deb_json_str.strip())
+                    json_loaded = json.loads(cleaned_deb_json)
                     # Extrair transação de diferentes formatos Hybris
                     prefill_deb_json = extract_transaction_from_hybris(json_loaded)
                     # Normalizar amount: converter centavos para Reais se necessário
@@ -734,7 +841,9 @@ if transaction_type:
             prefill_cred_json = None
             if cred_json_str.strip():
                 try:
-                    json_loaded = json.loads(cred_json_str.strip())
+                    # Tentar corrigir JSON incompleto
+                    cleaned_cred_json = try_fix_incomplete_json(cred_json_str.strip())
+                    json_loaded = json.loads(cleaned_cred_json)
                     # Extrair transação de diferentes formatos Hybris
                     prefill_cred_json = extract_transaction_from_hybris(json_loaded)
                     # Normalizar amount: converter centavos para Reais se necessário
@@ -880,7 +989,8 @@ if transaction_type:
         # Criar abas para cada transação
         tabs = st.tabs([f"Transação {i+1}" for i in range(int(num_transactions))])
 
-        temp_transactions = []
+        # Reinicializar temp_transactions a cada render (importante para Streamlit)
+        temp_transactions = [None] * int(num_transactions)
 
         for idx, tab in enumerate(tabs):
             with tab:
@@ -918,7 +1028,9 @@ if transaction_type:
 
                     if existing_trans_str.strip():
                         try:
-                            json_loaded = json.loads(existing_trans_str.strip())
+                            # Tentar corrigir JSON incompleto
+                            fixed_json_str = try_fix_incomplete_json(existing_trans_str.strip())
+                            json_loaded = json.loads(fixed_json_str)
                             # Extrair transação de diferentes formatos Hybris
                             prefill_trans = extract_transaction_from_hybris(json_loaded)
                             # Normalizar amount: converter centavos para Reais se necessário
@@ -941,7 +1053,7 @@ if transaction_type:
                     # Apenas preparar dados do JSON colado
                     trans_data = prefill_trans if prefill_trans else {}
                     if trans_data:
-                        temp_transactions.append(trans_data)
+                        temp_transactions[idx] = trans_data
 
                 else:  # has_existing_trans == "Não"
                     # Mostrar formulário manual APENAS quando responder "Não"
@@ -1069,37 +1181,44 @@ if transaction_type:
                         if prefill_trans.get("external_id"):
                             trans_data["preserve_external_id"] = prefill_trans["external_id"]
 
-                    temp_transactions.append(trans_data)
+                    temp_transactions[idx] = trans_data
 
         # Botão para gerar
         if st.button("🚀 Gerar JSON", type="primary"):
-            # Validar campos obrigatórios
-            all_valid = True
-            for i, trans in enumerate(temp_transactions):
-                # Se for transação colada (JSON pronto), não validar campos do formulário
-                if "type" not in trans:
-                    # É um JSON colado pronto - validar apenas número
-                    if not trans.get("number"):
-                        st.error(f"⚠️ Transação {i+1}: JSON colado precisa ter 'number'!")
-                        all_valid = False
-                else:
-                    # É transação preenchida manualmente - validar campos completos
-                    if not trans.get("number") or not trans.get("merchant_name"):
-                        st.error(f"⚠️ Transação {i+1}: Preencha todos os campos obrigatórios!")
-                        all_valid = False
+            # Filtrar transações válidas (remover None)
+            valid_transactions = [t for t in temp_transactions if t is not None]
 
-                    if trans["type"] in ["DEBITO", "CREDITO"]:
-                        if not trans.get("authorization_code"):
-                            st.error(f"⚠️ Transação {i+1}: Preencha authorization_code!")
+            # Validar se tem pelo menos 2 transações
+            if len(valid_transactions) < 2:
+                st.error(f"⚠️ Preencha pelo menos 2 transações! Você preencheu {len(valid_transactions)}.")
+            else:
+                # Validar campos obrigatórios
+                all_valid = True
+                for i, trans in enumerate(valid_transactions):
+                    # Se for transação colada (JSON pronto), não validar campos do formulário
+                    if "type" not in trans:
+                        # É um JSON colado pronto - validar apenas número
+                        if not trans.get("number"):
+                            st.error(f"⚠️ Transação {i+1}: JSON colado precisa ter 'number'!")
+                            all_valid = False
+                    else:
+                        # É transação preenchida manualmente - validar campos completos
+                        if not trans.get("number") or not trans.get("merchant_name"):
+                            st.error(f"⚠️ Transação {i+1}: Preencha todos os campos obrigatórios!")
                             all_valid = False
 
-                    if trans["type"] == "CREDITO":
-                        if not trans.get("number_of_quotas") or trans.get("number_of_quotas") == 0:
-                            st.error(f"⚠️ Transação {i+1}: Preencha numberOfQuotas!")
-                            all_valid = False
+                        if trans["type"] in ["DEBITO", "CREDITO"]:
+                            if not trans.get("authorization_code"):
+                                st.error(f"⚠️ Transação {i+1}: Preencha authorization_code!")
+                                all_valid = False
 
-            if all_valid:
-                transactions_data = temp_transactions
+                        if trans["type"] == "CREDITO":
+                            if not trans.get("number_of_quotas") or trans.get("number_of_quotas") == 0:
+                                st.error(f"⚠️ Transação {i+1}: Preencha numberOfQuotas!")
+                                all_valid = False
+
+                if all_valid:
+                    transactions_data = valid_transactions
 
 # GERAR JSON (quando há dados a consolidar)
 # Esta seção processa e gera o JSON, armazenando em session_state
@@ -1154,7 +1273,11 @@ if transactions_data and not st.session_state.json_generated:
 
     except json.JSONDecodeError as e:
         st.error(f"❌ Erro ao fazer parse do JSON do cabeçalho: {str(e)}")
-        st.info("💡 Verifique se o JSON colado está no formato correto.")
+        st.info("💡 **Dicas para corrigir o erro:**")
+        st.info("• Verifique se há vírgula dupla ou dados duplicados")
+        st.info("• Remova qualquer texto após o JSON")
+        st.info("• Certifique-se de que não há caracteres extras no final")
+        st.info("• Se houver múltiplos JSONs colados, separe um de cada vez")
     except Exception as e:
         st.error(f"❌ Erro ao gerar JSON: {str(e)}")
         st.exception(e)
@@ -1288,12 +1411,17 @@ if st.session_state.json_generated and st.session_state.generated_result:
     with col2:
         # Botão Clear All
         if st.button("🔄 Limpar Tudo", use_container_width=True):
-            # Resetar APENAS o session state de geração
-            # (Os widgets vão recriar com valores padrão automaticamente)
+            # Resetar TODOS os session states
             st.session_state.json_generated = False
             st.session_state.generated_result = None
             st.session_state.generated_result_obj = None
             st.session_state.previous_transaction_type = ""
+            st.session_state.last_header_json_hash = None
+
+            # Limpar também o selectbox de tipo de transação
+            # (usando key específica definida na linha 395)
+            if "transaction_type_select" in st.session_state:
+                del st.session_state.transaction_type_select
 
             # Reexecutar página para mostrar formulário vazio
             st.rerun()
