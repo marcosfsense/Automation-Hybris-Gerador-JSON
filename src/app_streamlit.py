@@ -444,8 +444,13 @@ st.subheader("1️⃣ JSON do Cabeçalho (do Hybris)")
 
 st.info("ℹ️ **Importante:** Cole TODO o JSON do pedido ATÉ ANTES do campo `\"transactions\"`. Pode terminar com vírgula - o sistema corrige automaticamente.")
 
+# Inicializar session_state para o header se não existir
+if "header_json_input" not in st.session_state:
+    st.session_state.header_json_input = ""
+
 header_json_str = st.text_area(
     "Cole aqui o JSON do cabeçalho do pedido (até antes de 'transactions'):",
+    value=st.session_state.header_json_input,
     height=300,
     placeholder="""{
   "id": "c777434f-a679-4298-9803-12d069a4a13d",
