@@ -48,8 +48,11 @@ coverage.xml
 *.cover
 .hypothesis/
 
-# Streamlit cache
+# Streamlit cache (mas MANTER config.toml!)
 .streamlit/cache
+.streamlit/secrets.toml
+# NÃO ignorar: .streamlit/config.toml é necessário!
+!.streamlit/config.toml
 
 # Documentation (not needed in container)
 docs/
