@@ -59,7 +59,7 @@ nginx -g "daemon off;" &
 # Iniciar Streamlit
 streamlit run src/app_streamlit.py --server.port=8501 --server.address=127.0.0.1
 EOF
-chmod +x /start.sh
+RUN chmod +x /start.sh
 
 # Expor porta padrão do Streamlit
 EXPOSE 8501
