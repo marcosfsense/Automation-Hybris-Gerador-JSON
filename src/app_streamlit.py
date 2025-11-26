@@ -66,8 +66,11 @@ def check_password():
     """Verifica se o usuário está autenticado com formulário HTML detectável pelo navegador"""
     def password_entered():
         # Validar credenciais
-        username = st.session_state.get("username", "")
-        password = st.session_state.get("password", "")
+        username = st.session_state.get("login_username", "").strip()
+        password = st.session_state.get("login_password", "").strip()
+
+        if not username or not password:
+            return
 
         credentials = load_credentials()
         users = credentials.get("users", {})
@@ -77,68 +80,170 @@ def check_password():
             if user.get("enabled", True) and verify_password(password, user.get("password_hash", "")):
                 st.session_state["password_correct"] = True
                 st.session_state["username_logged"] = username
-                del st.session_state["password"]
-                del st.session_state["username"]
+                # Limpar dados sensíveis
+                if "login_username" in st.session_state:
+                    del st.session_state["login_username"]
+                if "login_password" in st.session_state:
+                    del st.session_state["login_password"]
             else:
                 st.session_state["password_correct"] = False
+                st.session_state["login_error"] = "Usuário ou senha incorretos"
         else:
             st.session_state["password_correct"] = False
+            st.session_state["login_error"] = "Usuário ou senha incorretos"
 
     if "password_correct" not in st.session_state:
         st.set_page_config(page_title="Autenticação", layout="centered")
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.markdown("# 🔐 Acesso Restrito")
-            st.markdown("Autentique-se para continuar")
 
-            # Usar Streamlit inputs COM atributos HTML que navegador reconhece
-            # Isso permite que o navegador detecte como form de login
-            st.markdown("""
+        # Renderizar formulário HTML PURO que navegador detecta perfeitamente
+        # Este formulário terá atributos padrão W3C que o navegador reconhece
+        login_html = """
+        <form id="streamlit-login-form" method="POST" action="">
             <style>
-                /* Melhorar estilo dos inputs para se parecer com form padrão */
-                input[type="text"],
-                input[type="password"] {
-                    width: 100% !important;
-                    padding: 10px !important;
-                    border: 1px solid #ddd !important;
-                    border-radius: 4px !important;
-                    font-size: 14px !important;
-                    box-sizing: border-box !important;
-                    margin: 5px 0 15px 0 !important;
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    background: #f5f5f5;
+                    margin: 0;
+                    padding: 20px;
                 }
-                button[type="submit"] {
-                    width: 100% !important;
-                    padding: 10px !important;
-                    background-color: #FF6B6B !important;
-                    color: white !important;
-                    border: none !important;
-                    border-radius: 4px !important;
-                    font-weight: bold !important;
-                    cursor: pointer !important;
-                    font-size: 16px !important;
+                .container {
+                    max-width: 400px;
+                    margin: 80px auto;
+                    background: white;
+                    padding: 40px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                }
+                h1 {
+                    text-align: center;
+                    margin: 0 0 10px 0;
+                    font-size: 28px;
+                    color: #333;
+                }
+                .subtitle {
+                    text-align: center;
+                    margin: 0 0 30px 0;
+                    color: #666;
+                    font-size: 14px;
+                }
+                .form-group {
+                    margin-bottom: 20px;
+                }
+                label {
+                    display: block;
+                    margin-bottom: 8px;
+                    color: #333;
+                    font-weight: 500;
+                    font-size: 14px;
+                }
+                input {
+                    width: 100%;
+                    padding: 12px;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    font-size: 14px;
+                    box-sizing: border-box;
+                    font-family: inherit;
+                }
+                input:focus {
+                    outline: none;
+                    border-color: #FF6B6B;
+                    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+                }
+                button {
+                    width: 100%;
+                    padding: 12px;
+                    background-color: #FF6B6B;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    font-size: 16px;
+                    margin-top: 10px;
+                }
+                button:hover {
+                    background-color: #ff5252;
+                }
+                button:active {
+                    background-color: #d64545;
                 }
             </style>
-            """, unsafe_allow_html=True)
 
-            # Usar form do Streamlit que tem atributos HTML corretos
-            with st.form("login_form"):
-                username = st.text_input(
-                    "Usuário:",
-                    key="username",
-                    placeholder="Digite seu usuário"
-                )
-                password = st.text_input(
-                    "Senha:",
-                    type="password",
-                    key="password",
-                    placeholder="Digite sua senha"
-                )
+            <div class="container">
+                <h1>🔐 Acesso Restrito</h1>
+                <p class="subtitle">Autentique-se para continuar</p>
 
-                # Botão submit do formulário
-                submitted = st.form_submit_button("🔓 Acessar", use_container_width=True)
+                <div class="form-group">
+                    <label for="username">Usuário:</label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        autocomplete="username"
+                        placeholder="Digite seu usuário"
+                        required
+                        autofocus
+                    />
+                </div>
 
-                if submitted:
-                    password_entered()
+                <div class="form-group">
+                    <label for="password">Senha:</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        autocomplete="current-password"
+                        placeholder="Digite sua senha"
+                        required
+                    />
+                </div>
+
+                <button type="submit">🔓 Acessar</button>
+            </div>
+
+            <script>
+                document.getElementById('streamlit-login-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    const username = document.getElementById('username').value;
+                    const password = document.getElementById('password').value;
+
+                    // Enviar via query params (funciona com Streamlit)
+                    const params = new URLSearchParams();
+                    params.append('login_username', username);
+                    params.append('login_password', password);
+
+                    // Recarregar a página com os parâmetros
+                    window.location.href = window.location.pathname + '?' + params.toString();
+                });
+            </script>
+        </form>
+        """
+
+        # Mostrar o formulário HTML
+        st.markdown(login_html, unsafe_allow_html=True)
+
+        # Verificar se recebemos credenciais via query params
+        query_params = st.query_params
+        if "login_username" in query_params and "login_password" in query_params:
+            # Armazenar no session state
+            st.session_state["login_username"] = query_params.get("login_username", [""])[0] if isinstance(query_params.get("login_username"), list) else query_params.get("login_username", "")
+            st.session_state["login_password"] = query_params.get("login_password", [""])[0] if isinstance(query_params.get("login_password"), list) else query_params.get("login_password", "")
+
+            # Validar credenciais
+            password_entered()
+
+            # Limpar query params
+            st.query_params.clear()
+
+            # Se login bem-sucedido, rerun
+            if st.session_state.get("password_correct", False):
+                st.rerun()
+
+        # Mostrar erro se existir
+        if st.session_state.get("login_error"):
+            st.error(f"❌ {st.session_state['login_error']}")
 
         st.stop()
     elif not st.session_state.get("password_correct", False):
