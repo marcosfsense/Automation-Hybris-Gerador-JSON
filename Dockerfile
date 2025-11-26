@@ -65,9 +65,5 @@ RUN chmod +x /start.sh
 # Expor porta padrão do Streamlit
 EXPOSE 8501
 
-# Health check (opcional, mas recomendado para Coolify)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://127.0.0.1/_stcore/health || exit 1
-
 # Comando para iniciar Nginx + Streamlit
 CMD ["/start.sh"]
