@@ -24,30 +24,38 @@ def load_credentials() -> dict:
     """Carrega credenciais do arquivo JSON"""
     creds_path = Path(__file__).parent.parent / "credentials.json"
 
-    if not creds_path.exists():
-        # Credencial padrão se arquivo não existir
-        return {
-            "users": {
-                "marco": {
-                    "password_hash": "sha256:a43f1d0aafd193734f329da5c1f88df67aac503afea0320db3825f2396e3e9a8",
-                    "enabled": True
-                }
+    try:
+        if creds_path.exists():
+            with open(creds_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                # Verificar se tem usuários, senão retornar erro para recarregar
+                if data and "users" in data and data["users"]:
+                    return data
+    except Exception as e:
+        # Log de erro para debug
+        pass
+
+    # Se chegou aqui, arquivo não existe ou está vazio/corrompido
+    # Criar arquivo padrão
+    default_creds = {
+        "users": {
+            "marco": {
+                "password_hash": "sha256:8f68a0d4e226a2624a9c98778bf8d6b88919dc8a4d3b214316534272fd0490c8",
+                "created_at": "2025-11-26",
+                "last_login": None,
+                "enabled": True
             }
-        }
+        },
+        "version": "1.0"
+    }
 
     try:
-        with open(creds_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        with open(creds_path, 'w', encoding='utf-8') as f:
+            json.dump(default_creds, f, indent=2, ensure_ascii=False)
     except Exception:
-        # Retorna padrão em caso de erro
-        return {
-            "users": {
-                "marco": {
-                    "password_hash": "sha256:a43f1d0aafd193734f329da5c1f88df67aac503afea0320db3825f2396e3e9a8",
-                    "enabled": True
-                }
-            }
-        }
+        pass
+
+    return default_creds
 
 def verify_password(password: str, password_hash: str) -> bool:
     """Verifica se a senha corresponde ao hash SHA256"""
