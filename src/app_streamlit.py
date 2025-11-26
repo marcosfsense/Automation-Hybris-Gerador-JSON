@@ -95,136 +95,7 @@ def check_password():
     if "password_correct" not in st.session_state:
         st.set_page_config(page_title="Autenticação", layout="centered")
 
-        # Renderizar formulário HTML PURO que navegador detecta perfeitamente
-        # Este formulário terá atributos padrão W3C que o navegador reconhece
-        login_html = """
-        <form id="streamlit-login-form" method="POST" action="">
-            <style>
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    background: #f5f5f5;
-                    margin: 0;
-                    padding: 20px;
-                }
-                .container {
-                    max-width: 400px;
-                    margin: 80px auto;
-                    background: white;
-                    padding: 40px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                }
-                h1 {
-                    text-align: center;
-                    margin: 0 0 10px 0;
-                    font-size: 28px;
-                    color: #333;
-                }
-                .subtitle {
-                    text-align: center;
-                    margin: 0 0 30px 0;
-                    color: #666;
-                    font-size: 14px;
-                }
-                .form-group {
-                    margin-bottom: 20px;
-                }
-                label {
-                    display: block;
-                    margin-bottom: 8px;
-                    color: #333;
-                    font-weight: 500;
-                    font-size: 14px;
-                }
-                input {
-                    width: 100%;
-                    padding: 12px;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    font-size: 14px;
-                    box-sizing: border-box;
-                    font-family: inherit;
-                }
-                input:focus {
-                    outline: none;
-                    border-color: #FF6B6B;
-                    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
-                }
-                button {
-                    width: 100%;
-                    padding: 12px;
-                    background-color: #FF6B6B;
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    font-weight: bold;
-                    cursor: pointer;
-                    font-size: 16px;
-                    margin-top: 10px;
-                }
-                button:hover {
-                    background-color: #ff5252;
-                }
-                button:active {
-                    background-color: #d64545;
-                }
-            </style>
-
-            <div class="container">
-                <h1>🔐 Acesso Restrito</h1>
-                <p class="subtitle">Autentique-se para continuar</p>
-
-                <div class="form-group">
-                    <label for="username">Usuário:</label>
-                    <input
-                        type="text"
-                        id="username"
-                        name="username"
-                        autocomplete="username"
-                        placeholder="Digite seu usuário"
-                        required
-                        autofocus
-                    />
-                </div>
-
-                <div class="form-group">
-                    <label for="password">Senha:</label>
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        autocomplete="current-password"
-                        placeholder="Digite sua senha"
-                        required
-                    />
-                </div>
-
-                <button type="submit">🔓 Acessar</button>
-            </div>
-
-            <script>
-                document.getElementById('streamlit-login-form').addEventListener('submit', function(e) {
-                    e.preventDefault();
-
-                    const username = document.getElementById('username').value;
-                    const password = document.getElementById('password').value;
-
-                    // Enviar via query params (funciona com Streamlit)
-                    const params = new URLSearchParams();
-                    params.append('login_username', username);
-                    params.append('login_password', password);
-
-                    // Recarregar a página com os parâmetros
-                    window.location.href = window.location.pathname + '?' + params.toString();
-                });
-            </script>
-        </form>
-        """
-
-        # Mostrar o formulário HTML
-        st.markdown(login_html, unsafe_allow_html=True)
-
-        # Verificar se recebemos credenciais via query params
+        # Verificar se recebemos credenciais via query params ANTES de renderizar
         query_params = st.query_params
         if "login_username" in query_params and "login_password" in query_params:
             # Armazenar no session state
@@ -240,6 +111,171 @@ def check_password():
             # Se login bem-sucedido, rerun
             if st.session_state.get("password_correct", False):
                 st.rerun()
+
+        # Renderizar formulário HTML usando st.components.v1.html()
+        # Isso coloca em um iframe isolado onde o formulário funciona perfeitamente
+        login_html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    background: #f5f5f5;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    padding: 20px;
+                }
+                .container {
+                    background: white;
+                    padding: 40px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    width: 100%;
+                    max-width: 400px;
+                }
+                h1 {
+                    text-align: center;
+                    font-size: 28px;
+                    color: #333;
+                    margin-bottom: 10px;
+                }
+                .subtitle {
+                    text-align: center;
+                    color: #666;
+                    font-size: 14px;
+                    margin-bottom: 30px;
+                }
+                form {
+                    display: flex;
+                    flex-direction: column;
+                }
+                .form-group {
+                    margin-bottom: 20px;
+                    display: flex;
+                    flex-direction: column;
+                }
+                label {
+                    display: block;
+                    margin-bottom: 8px;
+                    color: #333;
+                    font-weight: 500;
+                    font-size: 14px;
+                }
+                input {
+                    padding: 12px;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    font-size: 14px;
+                    font-family: inherit;
+                    transition: all 0.2s;
+                }
+                input:focus {
+                    outline: none;
+                    border-color: #FF6B6B;
+                    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+                }
+                input::placeholder {
+                    color: #aaa;
+                }
+                button {
+                    padding: 12px;
+                    background-color: #FF6B6B;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    font-size: 16px;
+                    margin-top: 10px;
+                    transition: all 0.2s;
+                }
+                button:hover {
+                    background-color: #ff5252;
+                }
+                button:active {
+                    background-color: #d64545;
+                }
+                .error {
+                    color: #d32f2f;
+                    font-size: 14px;
+                    margin-top: 20px;
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🔐 Acesso Restrito</h1>
+                <p class="subtitle">Autentique-se para continuar</p>
+
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username">Usuário:</label>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            autocomplete="username"
+                            placeholder="Digite seu usuário"
+                            required
+                            autofocus
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Senha:</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            autocomplete="current-password"
+                            placeholder="Digite sua senha"
+                            required
+                        />
+                    </div>
+
+                    <button type="submit">🔓 Acessar</button>
+                    <div class="error" id="error-msg"></div>
+                </form>
+            </div>
+
+            <script>
+                document.getElementById('login-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    const username = document.getElementById('username').value.trim();
+                    const password = document.getElementById('password').value.trim();
+
+                    if (!username || !password) {
+                        document.getElementById('error-msg').textContent = 'Preencha todos os campos!';
+                        return;
+                    }
+
+                    // Enviar via query params
+                    const params = new URLSearchParams();
+                    params.append('login_username', username);
+                    params.append('login_password', password);
+
+                    // Recarregar a página pai (não o iframe) com os parâmetros
+                    window.parent.location.href = window.parent.location.pathname + '?' + params.toString();
+                });
+            </script>
+        </body>
+        </html>
+        """
+
+        # Renderizar usando st.components.v1.html() que funciona melhor
+        st.components.v1.html(login_html, height=600)
 
         # Mostrar erro se existir
         if st.session_state.get("login_error"):
