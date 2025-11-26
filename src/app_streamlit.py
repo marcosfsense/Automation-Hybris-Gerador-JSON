@@ -63,143 +63,84 @@ def verify_password(password: str, password_hash: str) -> bool:
     return expected_hash == password_hash
 
 def check_password():
-    """Verifica se o usuário está autenticado usando formulário HTML padrão (detectável)"""
+    """Verifica se o usuário está autenticado com formulário HTML detectável pelo navegador"""
+    def password_entered():
+        # Validar credenciais
+        username = st.session_state.get("username", "")
+        password = st.session_state.get("password", "")
+
+        credentials = load_credentials()
+        users = credentials.get("users", {})
+
+        if username in users:
+            user = users[username]
+            if user.get("enabled", True) and verify_password(password, user.get("password_hash", "")):
+                st.session_state["password_correct"] = True
+                st.session_state["username_logged"] = username
+                del st.session_state["password"]
+                del st.session_state["username"]
+            else:
+                st.session_state["password_correct"] = False
+        else:
+            st.session_state["password_correct"] = False
 
     if "password_correct" not in st.session_state:
         st.set_page_config(page_title="Autenticação", layout="centered")
-
-        # Criar espaço vazio para a página de login
         col1, col2, col3 = st.columns([1, 2, 1])
-
         with col2:
             st.markdown("# 🔐 Acesso Restrito")
             st.markdown("Autentique-se para continuar")
 
-            # HTML form padrão - navegador DETECTA isto como form de login!
-            login_html = """
-            <form id="login-form" style="width: 100%; max-width: 400px;">
-                <div style="margin-bottom: 15px;">
-                    <label for="username" style="display: block; margin-bottom: 5px; font-weight: bold;">Usuário:</label>
-                    <input
-                        type="text"
-                        id="username"
-                        name="username"
-                        autocomplete="username"
-                        placeholder="Digite seu usuário"
-                        required
-                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px;"
-                    />
-                </div>
-
-                <div style="margin-bottom: 15px;">
-                    <label for="password" style="display: block; margin-bottom: 5px; font-weight: bold;">Senha:</label>
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        autocomplete="current-password"
-                        placeholder="Digite sua senha"
-                        required
-                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px;"
-                    />
-                </div>
-
-                <button
-                    type="submit"
-                    style="width: 100%; padding: 10px; background-color: #FF6B6B; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px;"
-                >
-                    🔓 Acessar
-                </button>
-            </form>
-
-            <script>
-            document.getElementById('login-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-
-                // Enviar dados para Streamlit via session storage (workaround)
-                sessionStorage.setItem('login_username', username);
-                sessionStorage.setItem('login_password', password);
-                sessionStorage.setItem('login_attempt', 'true');
-
-                // Forçar recarregamento da página com dados
-                window.location.reload();
-            });
-            </script>
-            """
-
-            st.markdown(login_html, unsafe_allow_html=True)
-
-            # Verificar se há dados de login via session storage (via query params como fallback)
-            # Usar input fields invisíveis que Streamlit pode ler
+            # Usar Streamlit inputs COM atributos HTML que navegador reconhece
+            # Isso permite que o navegador detecte como form de login
             st.markdown("""
-            <script>
-                // Verificar se há dados salvos no session storage
-                if (sessionStorage.getItem('login_attempt') === 'true') {
-                    const user = sessionStorage.getItem('login_username');
-                    const pass = sessionStorage.getItem('login_password');
-
-                    if (user && pass) {
-                        // Limpar sessionStorage
-                        sessionStorage.removeItem('login_attempt');
-                        sessionStorage.removeItem('login_username');
-                        sessionStorage.removeItem('login_password');
-
-                        // Enviar para um endpoint ou usar método alternativo
-                        // Por enquanto, apenas não fazer nada - deixar o form aparecer novamente
-                    }
+            <style>
+                /* Melhorar estilo dos inputs para se parecer com form padrão */
+                input[type="text"],
+                input[type="password"] {
+                    width: 100% !important;
+                    padding: 10px !important;
+                    border: 1px solid #ddd !important;
+                    border-radius: 4px !important;
+                    font-size: 14px !important;
+                    box-sizing: border-box !important;
+                    margin: 5px 0 15px 0 !important;
                 }
-            </script>
+                button[type="submit"] {
+                    width: 100% !important;
+                    padding: 10px !important;
+                    background-color: #FF6B6B !important;
+                    color: white !important;
+                    border: none !important;
+                    border-radius: 4px !important;
+                    font-weight: bold !important;
+                    cursor: pointer !important;
+                    font-size: 16px !important;
+                }
+            </style>
             """, unsafe_allow_html=True)
 
-            # Adicionar campos hidden que capturam o login
-            st.markdown('<input type="hidden" id="st_username" />', unsafe_allow_html=True)
-            st.markdown('<input type="hidden" id="st_password" />', unsafe_allow_html=True)
+            # Usar form do Streamlit que tem atributos HTML corretos
+            with st.form("login_form"):
+                username = st.text_input(
+                    "Usuário:",
+                    key="username",
+                    placeholder="Digite seu usuário"
+                )
+                password = st.text_input(
+                    "Senha:",
+                    type="password",
+                    key="password",
+                    placeholder="Digite sua senha"
+                )
 
-            # Campos Streamlit invisíveis para processar login
-            with st.form("login_form", clear_on_submit=False):
-                st.write("")  # Espaço vazio
+                # Botão submit do formulário
+                submitted = st.form_submit_button("🔓 Acessar", use_container_width=True)
 
-                # Estes campos são invisíveis mas ainda funcionam
-                username = st.text_input("username_field", value="", label_visibility="collapsed")
-                password = st.text_input("password_field", value="", type="password", label_visibility="collapsed")
-
-                # Se houver dados nos campos, processar login
-                if username or password:
-                    st.session_state["username"] = username
-                    st.session_state["password"] = password
-                    st.session_state["login_submitted"] = True
-
-            # Processar login se foi submetido
-            if st.session_state.get("login_submitted"):
-                username = st.session_state.get("username", "")
-                password = st.session_state.get("password", "")
-
-                credentials = load_credentials()
-                users = credentials.get("users", {})
-
-                if username in users:
-                    user = users[username]
-                    if user.get("enabled", True) and verify_password(password, user.get("password_hash", "")):
-                        st.session_state["password_correct"] = True
-                        st.session_state["username_logged"] = username
-                        st.session_state["login_submitted"] = False
-                        if "username" in st.session_state:
-                            del st.session_state["username"]
-                        if "password" in st.session_state:
-                            del st.session_state["password"]
-                        st.rerun()
-                    else:
-                        st.error("❌ Usuário ou senha incorretos!")
-                        st.session_state["login_submitted"] = False
-                else:
-                    st.error("❌ Usuário ou senha incorretos!")
-                    st.session_state["login_submitted"] = False
+                if submitted:
+                    password_entered()
 
         st.stop()
-
     elif not st.session_state.get("password_correct", False):
         st.error("❌ Usuário ou senha incorretos!")
         st.stop()
