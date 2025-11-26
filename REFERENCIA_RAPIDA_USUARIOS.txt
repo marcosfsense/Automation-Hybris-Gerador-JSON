@@ -1,0 +1,272 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║             🎯 REFERÊNCIA RÁPIDA - COMANDOS DE USUÁRIOS                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 📋 LISTAR TODOS OS USUÁRIOS                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  python manage_users.py list
+
+  Resultado: Mostra todos os usuários cadastrados com:
+             - Nome do usuário
+             - Status (ativo/inativo)
+             - Data de criação
+             - Último acesso
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ➕ ADICIONAR NOVO USUÁRIO                                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  python manage_users.py add <username> <password>
+
+  Exemplos:
+    python manage_users.py add joao Senha@Joao2024
+    python manage_users.py add maria MariaSense#2024
+    python manage_users.py add carlos Carlos@Project123
+
+  Requisitos:
+    - Username: mínimo 3 caracteres
+    - Password: mínimo 8 caracteres
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🔑 ALTERAR SENHA DE UM USUÁRIO                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  python manage_users.py change <username> <new_password>
+
+  Exemplos:
+    python manage_users.py change marco SenhaNovaForte2024!
+    python manage_users.py change joao NovaSenha@Joao
+    python manage_users.py change maria Projeto#2024
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ❌ REMOVER UM USUÁRIO                                                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  python manage_users.py remove <username>
+
+  Exemplos:
+    python manage_users.py remove joao
+    python manage_users.py remove carlos
+    python manage_users.py remove maria
+
+  ⚠️  CUIDADO: Usuário removido não pode mais logar!
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🔄 RESETAR PARA CONFIGURAÇÃO PADRÃO                                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  python manage_users.py reset-all
+
+  Efeito:
+    - Remove TODOS os usuários
+    - Mantém apenas 'marco'
+    - Resetar para senha padrão: SenhaForte123!Marcos
+
+  ⚠️  AVISO: Esta ação não pode ser desfeita! Use com cuidado!
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                           📊 GUIA PRÁTICO                                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+
+SITUAÇÃO 1: Você quer ver quem tem acesso
+──────────────────────────────────────────
+
+  ➡️  python manage_users.py list
+
+
+SITUAÇÃO 2: Você quer criar um novo usuário
+─────────────────────────────────────────────
+
+  ➡️  python manage_users.py add joao SenhaForte2024!
+  ➡️  git add credentials.json
+  ➡️  git commit -m "chore: Adicionar usuario joao"
+  ➡️  git push origin main
+  ➡️  Redeploy no Coolify
+
+
+SITUAÇÃO 3: Um colega esqueceu a senha
+────────────────────────────────────────
+
+  ➡️  python manage_users.py change joao NovaSenha123!
+  ➡️  git add credentials.json
+  ➡️  git commit -m "chore: Reset senha joao"
+  ➡️  git push origin main
+  ➡️  Redeploy no Coolify
+  ➡️  Avise o colega da nova senha
+
+
+SITUAÇÃO 4: Um colega saiu e não precisa mais acessar
+────────────────────────────────────────────────────
+
+  ➡️  python manage_users.py remove joao
+  ➡️  git add credentials.json
+  ➡️  git commit -m "chore: Remover usuario joao"
+  ➡️  git push origin main
+  ➡️  Redeploy no Coolify
+
+
+SITUAÇÃO 5: Você quer alterar a senha do marco
+───────────────────────────────────────────────
+
+  ➡️  python manage_users.py change marco SenhaSegura2024!
+  ➡️  git add credentials.json
+  ➡️  git commit -m "chore: Alterar senha marco"
+  ➡️  git push origin main
+  ➡️  Redeploy no Coolify
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                      🔐 EXEMPLO DE SAÍDA COMPLETO                            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+Após executar: python manage_users.py list
+
+  ============================================================
+  📋 USUÁRIOS CADASTRADOS
+  ============================================================
+
+  👤 marco
+     Status: ✅ Ativo
+     Criado em: 2024-11-26 10:30:45
+     Último acesso: 2024-11-26 11:15:22
+
+  👤 joao
+     Status: ✅ Ativo
+     Criado em: 2024-11-26 10:35:10
+     Último acesso: 2024-11-26 12:45:30
+
+  👤 maria
+     Status: ✅ Ativo
+     Criado em: 2024-11-26 11:00:00
+     Último acesso: Nunca
+
+  ============================================================
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    💡 DICAS DE SENHAS SEGURAS                                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+✅ BOAS SENHAS (use como inspiração)
+─────────────────────────────────────
+
+  SenhaForte123!Marcos
+  Projeto@Sense2024
+  Marco#Automation123
+  Hybris$Generator!01
+  Colega2024@Security
+  Tesla-Model3-2024
+
+  Características:
+    - 12-20 caracteres
+    - Combinação de MAIÚSCULAS, minúsculas, números, símbolos
+    - Não são palavras de dicionário comum
+
+
+❌ MÁ SENHAS (evite)
+─────────────────────
+
+  ❌ 123456           (números apenas)
+  ❌ password         (palavra comum)
+  ❌ abc123           (muito curta)
+  ❌ 12345678         (números sequenciais)
+  ❌ qwerty           (teclado)
+  ❌ iloveyou         (pessoal/óbvia)
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                       🆘 ERROS COMUNS E SOLUÇÕES                             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+ERRO: "Usuário já existe"
+──────────────────────────
+
+  Causa: Tentou criar um usuário que já existe
+
+  Solução:
+    ➡️  Use nome diferente: python manage_users.py add usuario2 Senha123!
+    ➡️  Ou altere a senha: python manage_users.py change username NovaSenha
+
+
+ERRO: "Senha deve ter pelo menos 8 caracteres"
+───────────────────────────────────────────────
+
+  Causa: Senha muito curta
+
+  Solução:
+    ➡️  Use senha com 8+ caracteres
+    ➡️  Exemplo: python manage_users.py add user Senha@User2024
+
+
+ERRO: "Usuário não encontrado"
+────────────────────────────────
+
+  Causa: Tentou editar/remover usuário que não existe
+
+  Solução:
+    ➡️  Verifique o nome: python manage_users.py list
+    ➡️  Certifique-se da digitação (maiúsculas/minúsculas importam)
+
+
+ERRO: FileNotFoundError ou credentials.json vazio
+───────────────────────────────────────────────────
+
+  Causa: Arquivo foi deletado ou corrompido
+
+  Solução:
+    ➡️  Execute qualquer comando para recriar:
+    ➡️  python manage_users.py list
+    ➡️  Ou use reset-all para restaurar padrão
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║               🚀 DEPLOY - APLICANDO MUDANÇAS NO COOLIFY                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+Após modificar usuários, siga este processo:
+
+1️⃣  Fazer commit local
+─────────────────────
+
+  git add credentials.json
+  git commit -m "chore: Adicionar/alterar/remover usuario"
+
+
+2️⃣  Push para GitHub
+────────────────────
+
+  git push origin main
+
+
+3️⃣  Redeploy no Coolify
+───────────────────────
+
+  1. Abra: https://coolify.sensebike.com.br
+  2. Navegue: Gerador-JSON-Hybris → Deployments
+  3. Clique: "Redeploy" (botão vermelho)
+  4. Aguarde: ~1-2 minutos
+
+
+4️⃣  Testar novo usuário
+────────────────────────
+
+  1. Abra: https://gerajson.sensebike.com.br
+  2. Teste login:
+     - Usuário: <novo usuario>
+     - Senha: <sua senha>
+  3. Deve aparecer a tela de login
+  4. Após login, acessa a aplicação
+
+
+═════════════════════════════════════════════════════════════════════════════════
+                    Você está no controle! 🎉 Gerencie com confiança!
+═════════════════════════════════════════════════════════════════════════════════
