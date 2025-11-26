@@ -104,12 +104,12 @@ def check_password():
 
             # Usar st.form que renderiza HTML padrão
             with st.form("login_form", clear_on_submit=False):
-                username = st.text_input(
+                st.text_input(
                     "Usuário:",
                     key="login_username",
                     placeholder="Digite seu usuário"
                 )
-                password = st.text_input(
+                st.text_input(
                     "Senha:",
                     type="password",
                     key="login_password",
@@ -119,8 +119,7 @@ def check_password():
                 submitted = st.form_submit_button("🔓 Acessar", use_container_width=True)
 
                 if submitted:
-                    st.session_state["login_username"] = username
-                    st.session_state["login_password"] = password
+                    # Streamlit já armazena em session_state automaticamente via key=
                     password_entered()
 
                     if st.session_state.get("password_correct", False):
