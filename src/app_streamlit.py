@@ -102,6 +102,182 @@ def check_password():
 check_password()
 
 # ═══════════════════════════════════════════════════════════════════════
+# GERENCIAMENTO DE USUÁRIOS - Funções para administração
+# ═══════════════════════════════════════════════════════════════════════
+
+def save_credentials(data: dict) -> None:
+    """Salva credenciais no arquivo JSON"""
+    creds_path = Path(__file__).parent.parent / "credentials.json"
+    try:
+        with open(creds_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        st.error(f"❌ Erro ao salvar credenciais: {e}")
+        return False
+
+def hash_password(password: str) -> str:
+    """Gera hash SHA256 da senha"""
+    return f"sha256:{hashlib.sha256(password.encode()).hexdigest()}"
+
+def page_admin_users():
+    """Página de administração de usuários"""
+    st.set_page_config(page_title="Gerenciar Usuários", layout="wide")
+    st.title("👥 Gerenciar Usuários")
+    st.markdown("---")
+
+    credentials = load_credentials()
+    users = credentials.get("users", {})
+
+    # Sidebar com opções
+    st.sidebar.title("⚙️ Opções")
+    tab_option = st.sidebar.radio(
+        "Escolha uma opção:",
+        ["📋 Listar Usuários", "➕ Criar Usuário", "🔑 Alterar Senha", "❌ Remover Usuário"]
+    )
+
+    # TAB 1: LISTAR USUÁRIOS
+    if tab_option == "📋 Listar Usuários":
+        st.subheader("📋 Usuários Cadastrados")
+
+        if not users:
+            st.info("ℹ️ Nenhum usuário cadastrado")
+        else:
+            # Criar tabela de usuários
+            for username, info in users.items():
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.write(f"**👤 {username}**")
+                with col2:
+                    status = "✅ Ativo" if info.get("enabled", True) else "❌ Inativo"
+                    st.write(status)
+                with col3:
+                    created = info.get("created_at", "N/A")
+                    st.write(f"Criado: {created}")
+                with col4:
+                    last_login = info.get("last_login", "Nunca")
+                    st.write(f"Último acesso: {last_login}")
+                st.divider()
+
+    # TAB 2: CRIAR USUÁRIO
+    elif tab_option == "➕ Criar Usuário":
+        st.subheader("➕ Criar Novo Usuário")
+
+        with st.form("form_add_user"):
+            new_username = st.text_input(
+                "Nome do usuário:",
+                placeholder="Ex: joao, maria, carlos",
+                help="Mínimo 3 caracteres, apenas letras e números"
+            )
+            new_password = st.text_input(
+                "Senha:",
+                type="password",
+                placeholder="Ex: SenhaForte123!",
+                help="Mínimo 8 caracteres"
+            )
+            confirm_password = st.text_input(
+                "Confirmar senha:",
+                type="password",
+                placeholder="Repita a senha",
+            )
+
+            submitted = st.form_submit_button("✅ Criar Usuário", use_container_width=True)
+
+            if submitted:
+                # Validações
+                if not new_username or not new_password or not confirm_password:
+                    st.error("❌ Todos os campos são obrigatórios!")
+                elif len(new_username) < 3:
+                    st.error("❌ Nome de usuário deve ter pelo menos 3 caracteres!")
+                elif len(new_password) < 8:
+                    st.error("❌ Senha deve ter pelo menos 8 caracteres!")
+                elif new_password != confirm_password:
+                    st.error("❌ As senhas não conferem!")
+                elif new_username in users:
+                    st.error(f"❌ Usuário '{new_username}' já existe!")
+                else:
+                    # Adicionar usuário
+                    credentials["users"][new_username] = {
+                        "password_hash": hash_password(new_password),
+                        "created_at": str(__import__('datetime').datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+                        "last_login": None,
+                        "enabled": True
+                    }
+
+                    if save_credentials(credentials):
+                        st.success(f"✅ Usuário '{new_username}' criado com sucesso!")
+                        st.balloons()
+
+    # TAB 3: ALTERAR SENHA
+    elif tab_option == "🔑 Alterar Senha":
+        st.subheader("🔑 Alterar Senha")
+
+        if not users:
+            st.warning("⚠️ Nenhum usuário cadastrado!")
+        else:
+            with st.form("form_change_password"):
+                username_to_change = st.selectbox(
+                    "Selecione o usuário:",
+                    list(users.keys()),
+                    help="Escolha o usuário cuja senha será alterada"
+                )
+                new_pass = st.text_input(
+                    "Nova senha:",
+                    type="password",
+                    placeholder="Ex: SenhaNovaForte123!",
+                    help="Mínimo 8 caracteres"
+                )
+                confirm_new_pass = st.text_input(
+                    "Confirmar nova senha:",
+                    type="password",
+                    placeholder="Repita a nova senha",
+                )
+
+                submitted = st.form_submit_button("✅ Alterar Senha", use_container_width=True)
+
+                if submitted:
+                    if not new_pass or not confirm_new_pass:
+                        st.error("❌ A nova senha e confirmação são obrigatórias!")
+                    elif len(new_pass) < 8:
+                        st.error("❌ Senha deve ter pelo menos 8 caracteres!")
+                    elif new_pass != confirm_new_pass:
+                        st.error("❌ As senhas não conferem!")
+                    else:
+                        # Alterar senha
+                        credentials["users"][username_to_change]["password_hash"] = hash_password(new_pass)
+                        credentials["users"][username_to_change]["last_modified"] = str(__import__('datetime').datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+                        if save_credentials(credentials):
+                            st.success(f"✅ Senha de '{username_to_change}' alterada com sucesso!")
+                            st.balloons()
+
+    # TAB 4: REMOVER USUÁRIO
+    elif tab_option == "❌ Remover Usuário":
+        st.subheader("❌ Remover Usuário")
+
+        if not users:
+            st.warning("⚠️ Nenhum usuário cadastrado!")
+        else:
+            username_to_remove = st.selectbox(
+                "Selecione o usuário para remover:",
+                list(users.keys()),
+                help="⚠️ Esta ação não pode ser desfeita!"
+            )
+
+            st.warning(f"⚠️ Você está prestes a remover o usuário '{username_to_remove}'. Esta ação não pode ser desfeita!")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("❌ Confirmar Remoção", use_container_width=True, type="secondary"):
+                    del credentials["users"][username_to_remove]
+                    if save_credentials(credentials):
+                        st.success(f"✅ Usuário '{username_to_remove}' removido com sucesso!")
+                        st.rerun()
+
+            with col2:
+                st.button("🔙 Cancelar", use_container_width=True)
+
+# ═══════════════════════════════════════════════════════════════════════
 # FUNÇÃO HELPER - Extrair transação de diferentes formatos Hybris
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -510,6 +686,21 @@ with st.sidebar:
         st.image(str(logo_path), width='stretch')
         st.markdown("---")
 
+    # MENU PRINCIPAL - Escolher entre Gerador JSON ou Gerenciar Usuários
+    menu_option = st.radio(
+        "📋 Escolha uma opção:",
+        ["🚀 Gerador JSON", "👥 Gerenciar Usuários"],
+        help="Selecione o que deseja fazer"
+    )
+
+    st.markdown("---")
+
+    # Se escolheu Gerenciar Usuários, mostrar a página de admin
+    if menu_option == "👥 Gerenciar Usuários":
+        page_admin_users()
+        st.stop()
+
+    # Caso contrário, continuar com Gerador JSON
     st.header("📋 Instruções")
     st.markdown("""
     ### Como usar:
