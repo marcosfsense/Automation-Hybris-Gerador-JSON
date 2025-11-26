@@ -348,6 +348,22 @@ st.set_page_config(
 )
 
 # ═══════════════════════════════════════════════════════════════════════
+# FORÇA TEMA ESCURO - Configuração direta em JavaScript
+# ═══════════════════════════════════════════════════════════════════════
+
+# Injetar JavaScript para forçar tema escuro (caso config.toml não funcione)
+st.markdown("""
+<script>
+    // Força tema escuro no Streamlit
+    let darkModeToggle = document.querySelector('[data-testid="stAppViewContainer"]');
+    if (darkModeToggle) {
+        // Tenta mudar tema para dark
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }
+</script>
+""", unsafe_allow_html=True)
+
+# ═══════════════════════════════════════════════════════════════════════
 # CSS CUSTOMIZADO - Estilos visuais para a aplicação
 # ═══════════════════════════════════════════════════════════════════════
 
