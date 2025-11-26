@@ -17,6 +17,49 @@ from pathlib import Path            # Trabalhar com caminhos de arquivos
 from hybris_json_generator import HybrisJSONGenerator  # Classe geradora do JSON
 
 # ═══════════════════════════════════════════════════════════════════════
+# AUTENTICAÇÃO - Proteção de acesso
+# ═══════════════════════════════════════════════════════════════════════
+
+def check_password():
+    """Verifica se o usuário está autenticado"""
+    def password_entered():
+        # Validar credenciais
+        username = st.session_state.get("username", "")
+        password = st.session_state.get("password", "")
+
+        if username == "marco" and password == "SenhaForte123!Marcos":
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]
+            del st.session_state["username"]
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        st.set_page_config(page_title="Autenticação", layout="centered")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown("# 🔐 Acesso Restrito")
+            st.markdown("Autentique-se para continuar")
+
+            username = st.text_input(
+                "Usuário:",
+                key="username",
+            )
+            password = st.text_input(
+                "Senha:",
+                type="password",
+                key="password",
+                on_change=password_entered
+            )
+        st.stop()
+    elif not st.session_state.get("password_correct", False):
+        st.error("❌ Usuário ou senha incorretos!")
+        st.stop()
+
+# Verificar autenticação no início
+check_password()
+
+# ═══════════════════════════════════════════════════════════════════════
 # FUNÇÃO HELPER - Extrair transação de diferentes formatos Hybris
 # ═══════════════════════════════════════════════════════════════════════
 
