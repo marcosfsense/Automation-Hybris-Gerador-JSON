@@ -1,75 +1,35 @@
-# 👥 Gerenciar Usuários - Interface Streamlit (NOVO!)
+# 👥 Gerenciar Usuários - Interface Gráfica (Streamlit)
 
-## ✨ Novidade!
+## 🎯 Visão Geral
 
-Você agora pode gerenciar usuários **DIRETAMENTE NA INTERFACE GRÁFICA** do Streamlit! 🎨
+Você pode gerenciar usuários de **duas formas**:
 
-Não precisa mais usar Prompt de Comando! Tudo está integrado na aplicação.
+1. **Interface Gráfica (Streamlit)** - Recomendado para iniciantes
+2. **Terminal (Script Python)** - Mais rápido para usuários avançados
 
----
-
-## 🎯 O Que Mudou
-
-### ❌ ANTES (Prompt de Comando)
-```bash
-# Abrir Prompt
-Windows + R → cmd
-
-# Navegar até a pasta
-cd "c:\Users\..."
-
-# Executar comando
-python manage_users.py list
-```
-
-### ✅ AGORA (Interface Gráfica)
-```
-1. Fazer login normalmente
-2. Clicar em "👥 Gerenciar Usuários" no sidebar
-3. Escolher a ação desejada
-4. Preencher e pronto!
-```
-
-**Muito mais fácil!** 🚀
+Este guia foca na **interface gráfica integrada** no Streamlit!
 
 ---
 
-## 📝 Credenciais de Acesso
-
-### Usuário Padrão
-```
-Usuário: marco
-Senha:   SenhaForte123!Marcos
-```
-
-Essas são as credenciais para fazer login na aplicação!
-
----
-
-## 🚀 Como Usar
+## 📱 Como Começar
 
 ### PASSO 1: Fazer Login
-
-1. Abra a aplicação: `https://gerajson.sensebike.com.br` (em produção)
-2. Ou execute localmente: `streamlit run src/app_streamlit.py`
-3. Digite o usuário e senha:
-   - Usuário: **marco**
-   - Senha: **SenhaForte123!Marcos**
+1. Acesse: `https://gerajson.sensebike.com.br` (produção) ou `streamlit run src/app_streamlit.py` (local)
+2. Digite o usuário e senha:
+   - **Usuário:** marco
+   - **Senha:** SenhaForte123!Marcos
 
 ### PASSO 2: Ir para Gerenciar Usuários
-
-1. **Na barra lateral esquerda (sidebar)**, você verá:
+1. Na barra lateral esquerda, você verá:
    ```
    📋 Escolha uma opção:
-   ⭕ 🚀 Gerador JSON  (padrão)
+   ⭕ 🚀 Gerador JSON
    ⭕ 👥 Gerenciar Usuários
    ```
-
-2. **Clique em**: `👥 Gerenciar Usuários`
+2. Clique em: **👥 Gerenciar Usuários**
 
 ### PASSO 3: Escolher a Ação
-
-Você verá no sidebar esquerdo:
+Você verá no sidebar esquerdo 4 opções:
 ```
 ⚙️ Opções:
   📋 Listar Usuários
@@ -84,19 +44,19 @@ Você verá no sidebar esquerdo:
 
 ### Como Usar
 1. Clique em: **📋 Listar Usuários**
-2. Você verá todos os usuários cadastrados
+2. Você verá todos os usuários cadastrados em uma tabela
 
 ### Exemplo de Resultado
 ```
 👤 marco
    Status: ✅ Ativo
-   Criado: 2024-11-26 10:30:45
-   Último acesso: 2024-11-26 11:15:22
+   Criado: 2025-11-26 10:30:45
+   Último: 2025-11-26 11:15:22
 
 👤 joao
    Status: ✅ Ativo
-   Criado: 2024-11-26 10:35:10
-   Último acesso: Nunca
+   Criado: 2025-11-26 10:35:10
+   Último: Nunca
 ```
 
 ---
@@ -133,8 +93,7 @@ Resultado: ✅ Usuário 'joao' criado com sucesso! 🎉
 
 ### Como Usar
 1. Clique em: **🔑 Alterar Senha**
-2. Escolha o usuário no dropdown:
-   - Selecione "marco" ou outro usuário
+2. Escolha o usuário no dropdown
 3. Digite a nova senha:
    - **Nova senha:** (mínimo 8 caracteres)
    - **Confirmar:** (repita a senha)
@@ -179,37 +138,65 @@ Resultado: ✅ Usuário 'joao' removido com sucesso! ✅
 
 ---
 
+## 🎯 Fluxo Visual Completo
+
+```
+┌─────────────────────────────────────┐
+│        🔐 Login na Aplicação        │
+│  Usuário: marco                     │
+│  Senha: SenhaForte123!Marcos        │
+└────────────────┬────────────────────┘
+                 ↓
+┌─────────────────────────────────────┐
+│      Menu Principal (Sidebar)       │
+│  ⭕ 🚀 Gerador JSON                │
+│  ⭕ 👥 Gerenciar Usuários          │
+└────────────────┬────────────────────┘
+                 ↓
+        (clica em 👥)
+                 ↓
+┌─────────────────────────────────────┐
+│    Página: Gerenciar Usuários       │
+│  ⚙️ Opções:                         │
+│  ○ 📋 Listar Usuários              │
+│  ○ ➕ Criar Usuário                │
+│  ○ 🔑 Alterar Senha                │
+│  ○ ❌ Remover Usuário              │
+└────────────────┬────────────────────┘
+          ┌──────┴──────┬────────┬──────┐
+          ↓             ↓        ↓      ↓
+      Listar        Criar    Alterar Remover
+      Usuários     Usuário    Senha   Usuário
+          ↓             ↓        ↓      ↓
+       Tabela      Formulário Dropdown Aviso
+                        ↓        ↓      ↓
+                     Salva    Salva  Confirmação
+                        ↓        ↓      ↓
+                    ✅ Criado ✅ Alterado ✅ Removido
+```
+
+---
+
 ## 🔄 Sincronizando com Coolify (Deploy)
 
-### Quando você muda usuários, precisa fazer deploy!
-
-**IMPORTANTE:** As mudanças são salvas automaticamente no arquivo `credentials.json`, mas para que funcionem em produção no Coolify, você precisa:
+### ⚠️ IMPORTANTE
+As mudanças são salvas automaticamente no arquivo `credentials.json`, mas para que funcionem em **produção**, você precisa:
 
 ### PASSO 1: Fazer Commit no GitHub
-
 1. Abra **Git Bash** ou **Prompt de Comando**
 2. Navegue até a pasta:
-   ```
+   ```bash
    cd "c:\Users\marcos.fernandes\Desktop\AUTOMAÇÃO HYBRIS - GERADOR DE JSONs"
    ```
-
 3. Execute os comandos:
    ```bash
-   # Ver o que mudou
-   git status
-
-   # Adicionar as mudanças
+   git status              # Ver o que mudou
    git add credentials.json
-
-   # Fazer commit
    git commit -m "chore: Gerenciar usuarios"
-
-   # Enviar para GitHub
    git push origin main
    ```
 
 ### PASSO 2: Fazer Redeploy no Coolify
-
 1. Abra seu **Coolify**: https://coolify.sensebike.com.br
 2. Navegue até: **Gerador-JSON-Hybris** → **Deployments**
 3. Clique em: **"Redeploy"** (botão vermelho)
@@ -217,7 +204,6 @@ Resultado: ✅ Usuário 'joao' removido com sucesso! ✅
 5. Status muda para: **"Successful"** (verde)
 
 ### PASSO 3: Testar Novo Usuário
-
 1. Abra: https://gerajson.sensebike.com.br
 2. Teste login com novo usuário:
    ```
@@ -228,42 +214,9 @@ Resultado: ✅ Usuário 'joao' removido com sucesso! ✅
 
 ---
 
-## ⚠️ Importante
-
-### Onde as Mudanças São Salvas
-
-Quando você cria/altera/remove usuários na interface, as mudanças são salvas em:
-```
-📁 credentials.json
-```
-
-Este arquivo fica na **raiz do projeto** e é sincronizado com GitHub quando você faz push.
-
-### Para Funcionar em Produção
-
-As mudanças só funcionam em produção após fazer:
-1. ✅ Commit no GitHub (`git add`, `git commit`, `git push`)
-2. ✅ Redeploy no Coolify (clique em "Redeploy")
-
----
-
-## 🎯 Comparação: Terminal vs Streamlit
-
-| Ação | Terminal (Antigo) | Streamlit (Novo) |
-|------|------------------|-----------------|
-| **Listar usuários** | `python manage_users.py list` | Clique e vê tabelaVisual |
-| **Criar usuário** | `python manage_users.py add joao Senha@123` | Preencha formulário com validação |
-| **Alterar senha** | `python manage_users.py change marco Nova!` | Dropdown e formulário |
-| **Remover usuário** | `python manage_users.py remove joao` | Dropdown com confirmação |
-| **Dificuldade** | ⭐⭐⭐ (complexo) | ⭐ (simples) |
-| **Tempo de aprendizado** | 30 minutos | 2 minutos |
-
----
-
 ## 💡 Dicas e Boas Práticas
 
 ### ✅ BOAS PRÁTICAS
-
 1. **Sempre faça Redeploy após mudanças**
    - Sem redeploy, mudanças não funcionam em produção
 
@@ -280,7 +233,6 @@ As mudanças só funcionam em produção após fazer:
    - Nunca deixe a senha padrão em produção
 
 ### ❌ ERROS COMUNS
-
 1. ❌ Criar usuário com senha muito curta
    - Use mínimo 8 caracteres (recomendo 12+)
 
@@ -298,14 +250,12 @@ As mudanças só funcionam em produção após fazer:
 ## 🆘 Problemas e Soluções
 
 ### Problema: "Não consigo entrar na página de Gerenciar Usuários"
-
 **Solução:**
 1. Certifique-se de que fez login corretamente
 2. A opção "👥 Gerenciar Usuários" aparece no sidebar?
 3. Se não aparecer, recarregue a página: Ctrl+F5
 
 ### Problema: "Fiz redeploy mas usuário novo não funciona"
-
 **Solução:**
 1. Aguarde 2-3 minutos após redeploy
 2. Recarregue a página no navegador: Ctrl+F5
@@ -313,7 +263,6 @@ As mudanças só funcionam em produção após fazer:
 4. Tente fazer login novamente
 
 ### Problema: "Esqueci qual é a senha do marco"
-
 **Solução:**
 1. Abra Prompt de Comando
 2. Execute:
@@ -327,7 +276,20 @@ As mudanças só funcionam em produção após fazer:
 
 ---
 
-## 📞 Resumo Rápido
+## 📊 Comparação: Streamlit vs Terminal
+
+| Ação | Terminal (Script) | Streamlit (Interface) |
+|------|-------------------|-----------------------|
+| **Listar usuários** | `python manage_users.py list` | Clique e vê tabela visual |
+| **Criar usuário** | `python manage_users.py add joao Senha@123` | Preencha formulário com validação |
+| **Alterar senha** | `python manage_users.py change marco Nova!` | Dropdown e formulário |
+| **Remover usuário** | `python manage_users.py remove joao` | Dropdown com confirmação |
+| **Dificuldade** | ⭐⭐⭐ (complexo) | ⭐ (simples) |
+| **Tempo de aprendizado** | 30 minutos | 2 minutos |
+
+---
+
+## 🎯 Resumo Rápido
 
 **Para Criar Novo Usuário:**
 1. Login → Sidebar "👥 Gerenciar" → "➕ Criar" → Preencher → Enviar
@@ -356,13 +318,3 @@ Você agora tem uma **interface gráfica completa** para gerenciar usuários!
 ✅ Com feedback visual
 
 **Aproveite bem!** 🚀
-
----
-
-## 📚 Recursos Adicionais
-
-- **Script do Terminal:** `manage_users.py` (ainda funciona!)
-- **Arquivo de Credenciais:** `credentials.json`
-- **Guia Completo:** `GUIA_GERENCIAR_USUARIOS.md`
-
-Qualquer dúvida, consulte os guias! 📖
