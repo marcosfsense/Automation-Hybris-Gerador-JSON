@@ -20,6 +20,40 @@ from hybris_json_generator import HybrisJSONGenerator  # Classe geradora do JSON
 # AUTENTICAÇÃO - Proteção de acesso
 # ═══════════════════════════════════════════════════════════════════════
 
+def load_credentials() -> dict:
+    """Carrega credenciais do arquivo JSON"""
+    creds_path = Path(__file__).parent.parent / "credentials.json"
+
+    if not creds_path.exists():
+        # Credencial padrão se arquivo não existir
+        return {
+            "users": {
+                "marco": {
+                    "password_hash": "sha256:a43f1d0aafd193734f329da5c1f88df67aac503afea0320db3825f2396e3e9a8",
+                    "enabled": True
+                }
+            }
+        }
+
+    try:
+        with open(creds_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        # Retorna padrão em caso de erro
+        return {
+            "users": {
+                "marco": {
+                    "password_hash": "sha256:a43f1d0aafd193734f329da5c1f88df67aac503afea0320db3825f2396e3e9a8",
+                    "enabled": True
+                }
+            }
+        }
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """Verifica se a senha corresponde ao hash SHA256"""
+    expected_hash = f"sha256:{hashlib.sha256(password.encode()).hexdigest()}"
+    return expected_hash == password_hash
+
 def check_password():
     """Verifica se o usuário está autenticado"""
     def password_entered():
@@ -27,10 +61,18 @@ def check_password():
         username = st.session_state.get("username", "")
         password = st.session_state.get("password", "")
 
-        if username == "marco" and password == "SenhaForte123!Marcos":
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]
-            del st.session_state["username"]
+        credentials = load_credentials()
+        users = credentials.get("users", {})
+
+        if username in users:
+            user = users[username]
+            if user.get("enabled", True) and verify_password(password, user.get("password_hash", "")):
+                st.session_state["password_correct"] = True
+                st.session_state["username_logged"] = username
+                del st.session_state["password"]
+                del st.session_state["username"]
+            else:
+                st.session_state["password_correct"] = False
         else:
             st.session_state["password_correct"] = False
 
