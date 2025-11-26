@@ -125,7 +125,8 @@ def validate_json_transaction(trans_data: dict, trans_type: str = None) -> tuple
             errors.append("'payment_fields' é obrigatório para CRÉDITO")
         elif not trans_data["payment_fields"].get("merchantName"):
             errors.append("'payment_fields.merchantName' é obrigatório para CRÉDITO")
-        elif not trans_data["payment_fields"].get("numberOfQuotas"):
+        # numberOfQuotas pode ser 0 em JSONs colados, então apenas verificar se existe a chave
+        elif "numberOfQuotas" not in trans_data["payment_fields"]:
             errors.append("'payment_fields.numberOfQuotas' é obrigatório para CRÉDITO")
 
     return len(errors) == 0, errors
@@ -505,6 +506,25 @@ elif st.session_state.previous_transaction_type != transaction_type:
 
 st.markdown("---")
 
+# SEÇÃO 2.5: NOME DO ESTABELECIMENTO (MERCHANT) - OBRIGATÓRIO
+st.subheader("2️⃣.5️⃣ Nome do Estabelecimento (Obrigatório)")
+
+st.info("ℹ️ **Importante:** Este campo será usado em TODAS as transações. Personalize com o nome da pessoa e assunto do email de solicitação.")
+
+# Inicializar session_state para merchant_name global se não existir
+if "global_merchant_name" not in st.session_state:
+    st.session_state.global_merchant_name = "Fake callback - "
+
+global_merchant_name = st.text_input(
+    "Nome do Estabelecimento *",
+    value=st.session_state.global_merchant_name,
+    placeholder="Ex: Fake callback - João Silva - RE: Transferência de 15/11/2024",
+    help="Personalize este campo com o nome da pessoa e o assunto da operação",
+    key="global_merchant_name"
+)
+
+st.markdown("---")
+
 # Inicializar variáveis
 transactions_data = []
 result_json = None
@@ -619,14 +639,12 @@ if transaction_type:
                 )
 
             with col2:
-                default_merchant = "Fake callback - "
-                if prefill_pix and prefill_pix.get("payment_fields"):
-                    default_merchant = prefill_pix["payment_fields"].get("merchantName", default_merchant)
-
+                # Usar merchant_name global (preenchido na seção 2.5)
                 pix_merchant_name = st.text_input(
                     "merchantName *",
-                    value=default_merchant,
-                    help="Nome do estabelecimento comercial"
+                    value=global_merchant_name,
+                    help="Nome do estabelecimento comercial (preenchido na seção acima)",
+                    disabled=True  # Desabilitar pois o valor vem da seção 2.5
                 )
 
                 default_auth = ""
@@ -753,13 +771,12 @@ if transaction_type:
                 )
 
             with col2:
-                default_merchant = "Fake callback - "
-                if prefill_deb and prefill_deb.get("payment_fields"):
-                    default_merchant = prefill_deb["payment_fields"].get("merchantName", default_merchant)
-
+                # Usar merchant_name global (preenchido na seção 2.5)
                 deb_merchant_name = st.text_input(
                     "merchantName *",
-                    value=default_merchant
+                    value=global_merchant_name,
+                    help="Nome do estabelecimento comercial (preenchido na seção acima)",
+                    disabled=True  # Desabilitar pois o valor vem da seção 2.5
                 )
 
                 default_auth = ""
@@ -913,13 +930,12 @@ if transaction_type:
                 cred_quotas = int(cred_quotas_str) if cred_quotas_str else 0
 
             with col2:
-                default_merchant = "Fake callback - "
-                if prefill_cred and prefill_cred.get("payment_fields"):
-                    default_merchant = prefill_cred["payment_fields"].get("merchantName", default_merchant)
-
+                # Usar merchant_name global (preenchido na seção 2.5)
                 cred_merchant_name = st.text_input(
                     "merchantName *",
-                    value=default_merchant
+                    value=global_merchant_name,
+                    help="Nome do estabelecimento comercial (preenchido na seção acima)",
+                    disabled=True  # Desabilitar pois o valor vem da seção 2.5
                 )
 
                 default_auth = ""
@@ -1045,6 +1061,9 @@ if transaction_type:
 
                             # Validar se tem campos obrigatórios (auto-detectar tipo)
                             is_valid, errors = validate_json_transaction(prefill_trans)
+
+                            # Mostrar validação com st.divider para ser mais visível
+                            st.divider()
                             if not is_valid:
                                 st.warning(f"⚠️ Transação {idx+1} tem problemas:")
                                 for error in errors:
@@ -1053,6 +1072,7 @@ if transaction_type:
                             else:
                                 st.success(f"✅ Transação {idx+1} carregada com sucesso!")
                         except json.JSONDecodeError as e:
+                            st.divider()
                             st.error(f"❌ Erro ao fazer parse do JSON: {str(e)}")
                             prefill_trans = None
 
@@ -1114,14 +1134,13 @@ if transaction_type:
                             key=f"number_{idx}"
                         )
 
-                        default_merchant = "Fake callback - "
-                        if prefill_trans and prefill_trans.get("payment_fields"):
-                            default_merchant = prefill_trans["payment_fields"].get("merchantName", default_merchant)
-
+                        # Usar merchant_name global (preenchido na seção 2.5)
                         trans_merchant = st.text_input(
                             "merchantName *",
-                            value=default_merchant,
-                            key=f"merchant_{idx}"
+                            value=global_merchant_name,
+                            key=f"merchant_{idx}",
+                            help="Nome do estabelecimento comercial (preenchido na seção 2.5)",
+                            disabled=True  # Desabilitar pois o valor vem da seção 2.5
                         )
 
                     with col2:
@@ -1431,6 +1450,10 @@ if st.session_state.json_generated and st.session_state.generated_result:
             # Limpar também o text_area do header JSON
             if "header_json_input" in st.session_state:
                 del st.session_state.header_json_input
+
+            # Limpar também o merchant_name global
+            if "global_merchant_name" in st.session_state:
+                st.session_state.global_merchant_name = "Fake callback - "
 
             # Reexecutar página para mostrar formulário vazio
             st.rerun()
