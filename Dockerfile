@@ -55,10 +55,17 @@ EOF
 # Script para iniciar Nginx e Streamlit
 RUN cat > /start.sh << 'EOF'
 #!/bin/bash
+set -e
+
 # Iniciar Nginx em background
 nginx -g "daemon off;" &
-# Iniciar Streamlit
-streamlit run src/app_streamlit.py --server.port=8501 --server.address=127.0.0.1
+NGINX_PID=$!
+
+# Aguardar um pouco para Nginx iniciar
+sleep 2
+
+# Iniciar Streamlit em foreground (principal)
+exec streamlit run src/app_streamlit.py --server.port=8501 --server.address=127.0.0.1
 EOF
 RUN chmod +x /start.sh
 
