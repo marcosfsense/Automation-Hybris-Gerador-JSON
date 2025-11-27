@@ -115,6 +115,36 @@ credentials = load_credentials()
 # Inicializar autenticador
 authenticator = load_authenticator()
 
+# SINCRONIZAÇÃO BIDIRECIONAL: Recuperar usuários de config.yaml se estiverem perdidos em credentials.json
+try:
+    # Tentar múltiplos caminhos para config.yaml
+    possible_config_paths = [
+        Path(__file__).parent.parent / "config.yaml",
+        Path.cwd() / "config.yaml",
+        Path.cwd().parent / "config.yaml",
+    ]
+
+    config_path = None
+    for path in possible_config_paths:
+        if path.exists():
+            config_path = path
+            break
+
+    if config_path:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config_data = yaml.safe_load(f)
+
+        # Sincronizar config.yaml → credentials.json (recuperar usuários perdidos)
+        credentials_before = len(credentials.get('users', {}))
+        credentials = sync_config_to_credentials(config_data, credentials)
+        credentials_after = len(credentials.get('users', {}))
+
+        # Se novos usuários foram recuperados, salvar em credentials.json
+        if credentials_after > credentials_before:
+            save_credentials(credentials)
+except Exception:
+    pass  # Falha silenciosa na sincronização
+
 # Renderizar widget de login
 try:
     authenticator.login()
@@ -167,6 +197,30 @@ def save_credentials(data: dict) -> None:
     except Exception as e:
         st.error(f"❌ Erro ao salvar credenciais: {e}")
         return False
+
+def sync_config_to_credentials(config_data: dict, credentials_data: dict) -> dict:
+    """
+    Sincroniza usuários do config.yaml para credentials.json (direção inversa).
+    Esto IMPORTANTE: Recupera usuários que podem ter sido perdidos no config.yaml.
+    """
+    try:
+        for username, user_info in config_data.get('credentials', {}).get('usernames', {}).items():
+            # Se usuário existe em config.yaml mas não em credentials.json, adicionar
+            if username not in credentials_data.get('users', {}):
+                credentials_data['users'][username] = {
+                    'password_hash': f"sha256:placeholder_{username}",  # Placeholder temporário
+                    'password': user_info.get('password', 'ChangeMe123!'),
+                    'email': user_info.get('email', f'{username}@example.com'),
+                    'name': user_info.get('name', username.title()),
+                    'created_at': str(__import__('datetime').datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+                    'last_login': None,
+                    'enabled': True
+                }
+    except Exception as e:
+        # Falha silenciosa
+        pass
+
+    return credentials_data
 
 def sync_credentials_to_config(credentials_data: dict) -> None:
     """Sincroniza credenciais do credentials.json para config.yaml para o streamlit-authenticator"""
