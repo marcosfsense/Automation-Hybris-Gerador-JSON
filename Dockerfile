@@ -19,8 +19,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ ./src/
 COPY img/ ./img/
 COPY .streamlit/ ./.streamlit/
-COPY config.yaml .
-COPY credentials.json .
+
+# NOTA: credentials.json e config.yaml NÃO são copiados porque:
+# 1. Contêm senhas e dados sensíveis
+# 2. São criados automaticamente pelo app na primeira execução
+# 3. Usuários devem configurar suas próprias credenciais
+# 4. Usar os arquivos .TEMPLATE como referência
+
+# Copiar arquivos template como referência (opcional)
+COPY credentials.json.TEMPLATE .
+COPY config.yaml.TEMPLATE .
 
 # Expor porta padrão do Streamlit
 EXPOSE 8501
