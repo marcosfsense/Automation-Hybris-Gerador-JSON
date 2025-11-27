@@ -28,7 +28,7 @@ def load_credentials() -> dict:
         if creds_path.exists():
             with open(creds_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                # Verificar se tem usuários, senão retornar erro para recarregar
+                # Verificar se tem usuários
                 if data and "users" in data and data["users"]:
                     return data
     except Exception as e:
@@ -36,7 +36,7 @@ def load_credentials() -> dict:
         pass
 
     # Se chegou aqui, arquivo não existe ou está vazio/corrompido
-    # Criar arquivo padrão
+    # Criar arquivo padrão APENAS se não existir
     default_creds = {
         "users": {
             "marco": {
@@ -49,11 +49,13 @@ def load_credentials() -> dict:
         "version": "1.0"
     }
 
-    try:
-        with open(creds_path, 'w', encoding='utf-8') as f:
-            json.dump(default_creds, f, indent=2, ensure_ascii=False)
-    except Exception:
-        pass
+    # Criar arquivo padrão APENAS se não existir
+    if not creds_path.exists():
+        try:
+            with open(creds_path, 'w', encoding='utf-8') as f:
+                json.dump(default_creds, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
 
     return default_creds
 
@@ -103,6 +105,7 @@ def check_password():
             st.markdown("Autentique-se para continuar")
 
             # Usar st.form que renderiza HTML padrão
+            # Importante: name= deve ser exatamente assim para navegador detectar
             with st.form("login_form", clear_on_submit=False):
                 st.text_input(
                     "Usuário:",
