@@ -1097,6 +1097,9 @@ if transaction_type:
 
             trans_data = prefill_pix_json if prefill_pix_json else {}
             if trans_data:
+                # Adicionar merchant_name global se não existir
+                if "merchant_name" not in trans_data:
+                    trans_data["merchant_name"] = global_merchant_name
                 transactions_data = [trans_data]
 
         # ========== BLOCO: NÃO (Formulário Manual) ==========
@@ -1231,6 +1234,9 @@ if transaction_type:
 
             trans_data = prefill_deb_json if prefill_deb_json else {}
             if trans_data:
+                # Adicionar merchant_name global se não existir
+                if "merchant_name" not in trans_data:
+                    trans_data["merchant_name"] = global_merchant_name
                 transactions_data = [trans_data]
 
         # ========== BLOCO: NÃO (Formulário Manual) ==========
@@ -1370,6 +1376,14 @@ if transaction_type:
 
             trans_data = prefill_cred_json if prefill_cred_json else {}
             if trans_data:
+                # Adicionar merchant_name global e extrair numberOfQuotas
+                if "merchant_name" not in trans_data:
+                    trans_data["merchant_name"] = global_merchant_name
+
+                # Extrair numberOfQuotas do JSON colado se existir em payment_fields
+                if trans_data.get("payment_fields") and trans_data["payment_fields"].get("numberOfQuotas"):
+                    trans_data["number_of_quotas"] = trans_data["payment_fields"].get("numberOfQuotas")
+
                 transactions_data = [trans_data]
 
         # ========== BLOCO: NÃO (Formulário Manual) ==========
@@ -1561,6 +1575,10 @@ if transaction_type:
                     # Apenas preparar dados do JSON colado
                     trans_data = prefill_trans if prefill_trans else {}
                     if trans_data:
+                        # Adicionar merchant_name global se não existir
+                        if "merchant_name" not in trans_data:
+                            trans_data["merchant_name"] = global_merchant_name
+
                         # Extrair numberOfQuotas se for CREDITO e passar como number_of_quotas
                         if trans_data.get("payment_fields"):
                             num_quotas = trans_data["payment_fields"].get("numberOfQuotas")
