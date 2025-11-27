@@ -14,29 +14,49 @@ import json                         # Biblioteca para manipular JSON
 import os                           # Funções do sistema operacional
 import hashlib                      # Hash para detectar mudanças
 from pathlib import Path            # Trabalhar com caminhos de arquivos
+import yaml                          # Para carregar config.yaml
+import streamlit_authenticator as stauth  # Biblioteca de autenticação
+from datetime import datetime       # Para timestamps
 from hybris_json_generator import HybrisJSONGenerator  # Classe geradora do JSON
 
 # ═══════════════════════════════════════════════════════════════════════
-# AUTENTICAÇÃO - Proteção de acesso
+# AUTENTICAÇÃO - Proteção de acesso com streamlit-authenticator
 # ═══════════════════════════════════════════════════════════════════════
 
+def load_authenticator():
+    """Carrega o autenticador usando config.yaml"""
+    config_path = Path(__file__).parent.parent / "config.yaml"
+
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+
+        authenticator = stauth.Authenticate(
+            credentials=config.get('credentials', {}),
+            cookie_name=config.get('cookie', {}).get('name', 'hybris_auth'),
+            cookie_key=config.get('cookie', {}).get('key', 'secret'),
+            cookie_expiry_days=config.get('cookie', {}).get('expiry_days', 30),
+            preauthorized=config.get('preauthorized', {}).get('emails', [])
+        )
+        return authenticator
+    except Exception as e:
+        st.error(f"❌ Erro ao carregar configuração de autenticação: {str(e)}")
+        st.stop()
+
 def load_credentials() -> dict:
-    """Carrega credenciais do arquivo JSON"""
+    """Carrega credenciais do arquivo JSON (para compatibilidade com gerenciamento de usuários)"""
     creds_path = Path(__file__).parent.parent / "credentials.json"
 
     try:
         if creds_path.exists():
             with open(creds_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                # Verificar se tem usuários
                 if data and "users" in data and data["users"]:
                     return data
-    except Exception as e:
-        # Log de erro para debug
+    except Exception:
         pass
 
-    # Se chegou aqui, arquivo não existe ou está vazio/corrompido
-    # Criar arquivo padrão APENAS se não existir
+    # Arquivo padrão APENAS se não existir
     default_creds = {
         "users": {
             "marco": {
@@ -49,7 +69,6 @@ def load_credentials() -> dict:
         "version": "1.0"
     }
 
-    # Criar arquivo padrão APENAS se não existir
     if not creds_path.exists():
         try:
             with open(creds_path, 'w', encoding='utf-8') as f:
@@ -59,182 +78,28 @@ def load_credentials() -> dict:
 
     return default_creds
 
-def verify_password(password: str, password_hash: str) -> bool:
-    """Verifica se a senha corresponde ao hash SHA256"""
-    expected_hash = f"sha256:{hashlib.sha256(password.encode()).hexdigest()}"
-    return expected_hash == password_hash
+# Inicializar autenticador
+authenticator = load_authenticator()
 
-def check_password():
-    """Verifica se o usuário está autenticado com formulário HTML detectável pelo navegador"""
-    def password_entered():
-        # Validar credenciais
-        username = st.session_state.get("login_username", "").strip()
-        password = st.session_state.get("login_password", "").strip()
+# Renderizar widget de login
+try:
+    authenticator.login()
+except Exception as e:
+    st.error(f"Erro ao exibir widget de login: {str(e)}")
 
-        if not username or not password:
-            return
-
-        credentials = load_credentials()
-        users = credentials.get("users", {})
-
-        if username in users:
-            user = users[username]
-            if user.get("enabled", True) and verify_password(password, user.get("password_hash", "")):
-                st.session_state["password_correct"] = True
-                st.session_state["username_logged"] = username
-                # Limpar dados sensíveis
-                if "login_username" in st.session_state:
-                    del st.session_state["login_username"]
-                if "login_password" in st.session_state:
-                    del st.session_state["login_password"]
-            else:
-                st.session_state["password_correct"] = False
-                st.session_state["login_error"] = "Usuário ou senha incorretos"
-        else:
-            st.session_state["password_correct"] = False
-            st.session_state["login_error"] = "Usuário ou senha incorretos"
-
-    if "password_correct" not in st.session_state:
-        st.set_page_config(page_title="Autenticação", layout="centered")
-
-        # HTML puro renderizado diretamente para navegador detectar perfeitamente
-        html_content = """
-        <style>
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            }
-            .login-container {
-                max-width: 400px;
-                margin: 100px auto;
-                padding: 40px;
-                background: white;
-                border-radius: 8px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }
-            .login-container h1 {
-                text-align: center;
-                color: #333;
-                margin-top: 0;
-            }
-            .login-container p {
-                text-align: center;
-                color: #666;
-            }
-            .login-form {
-                display: flex;
-                flex-direction: column;
-            }
-            .form-group {
-                margin-bottom: 20px;
-            }
-            .form-group label {
-                display: block;
-                margin-bottom: 8px;
-                font-weight: 500;
-                color: #333;
-            }
-            .form-group input {
-                width: 100%;
-                padding: 12px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-size: 14px;
-                box-sizing: border-box;
-            }
-            .form-group input:focus {
-                outline: none;
-                border-color: #FF6B6B;
-                box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
-            }
-            .login-form button {
-                padding: 12px;
-                background-color: #FF6B6B;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                font-weight: bold;
-                cursor: pointer;
-                font-size: 16px;
-            }
-            .login-form button:hover {
-                background-color: #ff5252;
-            }
-        </style>
-
-        <div class="login-container">
-            <h1>🔐 Acesso Restrito</h1>
-            <p>Autentique-se para continuar</p>
-
-            <form class="login-form" method="POST" action="">
-                <div class="form-group">
-                    <label for="username">Usuário:</label>
-                    <input
-                        type="text"
-                        id="username"
-                        name="login_username"
-                        autocomplete="username"
-                        placeholder="Digite seu usuário"
-                        required
-                        autofocus
-                    />
-                </div>
-
-                <div class="form-group">
-                    <label for="password">Senha:</label>
-                    <input
-                        type="password"
-                        id="password"
-                        name="login_password"
-                        autocomplete="current-password"
-                        placeholder="Digite sua senha"
-                        required
-                    />
-                </div>
-
-                <button type="submit">🔓 Acessar</button>
-            </form>
-        </div>
-        """
-
-        st.write(html_content, unsafe_allow_html=True)
-
-        # Verificar se formulário foi enviado (Streamlit carrega valores automaticamente quando post)
-        # Usar renderizador de formulário tradicional Streamlit como fallback
-        _, col_center, _ = st.columns([1, 2, 1])
-
-        with col_center:
-            with st.form("login_form_fallback", clear_on_submit=False):
-                st.text_input(
-                    "Ou autentique aqui:",
-                    key="login_username",
-                    placeholder="Usuário"
-                )
-                st.text_input(
-                    "",
-                    type="password",
-                    key="login_password",
-                    placeholder="Senha"
-                )
-
-                submitted = st.form_submit_button("🔓 Acessar", use_container_width=True)
-
-                if submitted:
-                    password_entered()
-
-                    if st.session_state.get("password_correct", False):
-                        st.rerun()
-
-        # Mostrar erro se existir
-        if st.session_state.get("login_error"):
-            st.error(f"❌ {st.session_state['login_error']}")
-
-        st.stop()
-    elif not st.session_state.get("password_correct", False):
-        st.error("❌ Usuário ou senha incorretos!")
-        st.stop()
-
-# Verificar autenticação no início
-check_password()
+# Verificar se o usuário está autenticado
+if st.session_state["authentication_status"]:
+    # Usuário logado com sucesso - renderizar botão de logout no sidebar
+    authenticator.logout(location="sidebar")
+    # Continuar com o aplicativo
+elif st.session_state["authentication_status"] is False:
+    # Credenciais inválidas
+    st.error("❌ Usuário ou senha incorretos")
+    st.stop()
+else:
+    # Não tentou fazer login ainda
+    st.warning("⚠️ Por favor, faça login para continuar")
+    st.stop()
 
 # ═══════════════════════════════════════════════════════════════════════
 # GERENCIAMENTO DE USUÁRIOS - Funções para administração

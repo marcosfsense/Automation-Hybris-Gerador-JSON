@@ -1,0 +1,15 @@
+credentials:
+  usernames:
+    marco:
+      email: marco@sensebike.com.br
+      name: Marco
+      password: SenhaForte123!Marcos
+
+cookie:
+  expiry_days: 30
+  key: gerador_json_hybris_secret_key_2025
+  name: hybris_json_generator_auth
+
+preauthorized:
+  emails:
+    - marco@sensebike.com.br
