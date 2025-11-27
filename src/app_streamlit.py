@@ -25,7 +25,22 @@ from hybris_json_generator import HybrisJSONGenerator  # Classe geradora do JSON
 
 def load_authenticator():
     """Carrega o autenticador usando config.yaml"""
-    config_path = Path(__file__).parent.parent / "config.yaml"
+    # Tentar múltiplos caminhos possíveis
+    possible_paths = [
+        Path(__file__).parent.parent / "config.yaml",  # Caminho relativo
+        Path.cwd() / "config.yaml",  # Diretório atual
+        Path.cwd().parent / "config.yaml",  # Diretório pai
+    ]
+
+    config_path = None
+    for path in possible_paths:
+        if path.exists():
+            config_path = path
+            break
+
+    if not config_path:
+        st.error(f"❌ Arquivo config.yaml não encontrado. Procurado em:\n" + "\n".join(str(p) for p in possible_paths))
+        st.stop()
 
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
@@ -45,16 +60,18 @@ def load_authenticator():
 
 def load_credentials() -> dict:
     """Carrega credenciais do arquivo JSON (para compatibilidade com gerenciamento de usuários)"""
-    creds_path = Path(__file__).parent.parent / "credentials.json"
+    # Tentar múltiplos caminhos possíveis
+    possible_paths = [
+        Path(__file__).parent.parent / "credentials.json",  # Caminho relativo
+        Path.cwd() / "credentials.json",  # Diretório atual
+        Path.cwd().parent / "credentials.json",  # Diretório pai
+    ]
 
-    try:
-        if creds_path.exists():
-            with open(creds_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                if data and "users" in data and data["users"]:
-                    return data
-    except Exception:
-        pass
+    creds_path = None
+    for path in possible_paths:
+        if path.exists():
+            creds_path = path
+            break
 
     # Arquivo padrão APENAS se não existir
     default_creds = {
@@ -69,7 +86,19 @@ def load_credentials() -> dict:
         "version": "1.0"
     }
 
-    if not creds_path.exists():
+    # Se encontrou arquivo, ler dados
+    if creds_path:
+        try:
+            with open(creds_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if data and "users" in data and data["users"]:
+                    return data
+        except Exception:
+            pass
+
+    # Se não encontrou, criar arquivo no primeiro caminho possível (raiz do projeto)
+    if not creds_path:
+        creds_path = Path(__file__).parent.parent / "credentials.json"
         try:
             with open(creds_path, 'w', encoding='utf-8') as f:
                 json.dump(default_creds, f, indent=2, ensure_ascii=False)
