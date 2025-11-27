@@ -887,8 +887,27 @@ OU (com vírgula no final também funciona):
 
 st.markdown("---")
 
-# SEÇÃO 2: TIPO DE TRANSAÇÃO
-st.subheader("2️⃣ Tipo de Transação")
+# SEÇÃO 2: MERCHANT NAME (OBRIGATÓRIO)
+st.subheader("2️⃣ MerchantName (Obrigatório)")
+
+st.info("ℹ️ **Importante:** Este campo será usado em TODAS as transações. Personalize com o nome da pessoa e assunto do email de solicitação.")
+
+# Inicializar session_state para merchant_name global se não existir
+if "global_merchant_name" not in st.session_state:
+    st.session_state.global_merchant_name = "Fake callback - "
+
+global_merchant_name = st.text_input(
+    "MerchantName *",
+    value=st.session_state.global_merchant_name,
+    placeholder="Ex: Fake callback - João Silva - RE: Transferência de 15/11/2024",
+    help="Personalize este campo com o nome da pessoa e o assunto da operação",
+    key="global_merchant_name"
+)
+
+st.markdown("---")
+
+# SEÇÃO 3: TIPO DE TRANSAÇÃO
+st.subheader("3️⃣ Tipo de Transação")
 
 transaction_type = st.selectbox(
     "Selecione o tipo de transação:",
@@ -905,25 +924,6 @@ elif st.session_state.previous_transaction_type != transaction_type:
     st.session_state.generated_result = None
     st.session_state.generated_result_obj = None
     st.session_state.previous_transaction_type = transaction_type
-
-st.markdown("---")
-
-# SEÇÃO 2.5: NOME DO ESTABELECIMENTO (MERCHANT) - OBRIGATÓRIO
-st.subheader("2️⃣.5️⃣ Nome do Estabelecimento (Obrigatório)")
-
-st.info("ℹ️ **Importante:** Este campo será usado em TODAS as transações. Personalize com o nome da pessoa e assunto do email de solicitação.")
-
-# Inicializar session_state para merchant_name global se não existir
-if "global_merchant_name" not in st.session_state:
-    st.session_state.global_merchant_name = "Fake callback - "
-
-global_merchant_name = st.text_input(
-    "Nome do Estabelecimento *",
-    value=st.session_state.global_merchant_name,
-    placeholder="Ex: Fake callback - João Silva - RE: Transferência de 15/11/2024",
-    help="Personalize este campo com o nome da pessoa e o assunto da operação",
-    key="global_merchant_name"
-)
 
 st.markdown("---")
 
@@ -951,9 +951,9 @@ if st.session_state.last_header_json_hash != current_header_hash:
     st.session_state.generated_result_obj = None
     st.session_state.last_header_json_hash = current_header_hash
 
-# SEÇÃO 3: CAMPOS ESPECÍFICOS POR TIPO
+# SEÇÃO 4: CAMPOS ESPECÍFICOS POR TIPO
 if transaction_type:
-    st.subheader(f"3️⃣ Dados da Transação - {transaction_type}")
+    st.subheader(f"4️⃣ Dados da Transação - {transaction_type}")
 
     # ==================== PIX ====================
     if transaction_type == "PIX":
