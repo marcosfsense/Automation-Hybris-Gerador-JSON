@@ -1942,23 +1942,25 @@ if st.session_state.json_generated and st.session_state.generated_result:
         # Botão Clear All
         if st.button("🔄 Limpar Tudo", use_container_width=True):
             # Resetar TODOS os session states
-            st.session_state.json_generated = False
-            st.session_state.generated_result = None
-            st.session_state.generated_result_obj = None
-            st.session_state.previous_transaction_type = ""
-            st.session_state.last_header_json_hash = None
-
-            # Limpar também o selectbox de tipo de transação
-            if "transaction_type_select" in st.session_state:
-                del st.session_state.transaction_type_select
-
-            # Limpar também o text_area do header JSON
-            if "header_json_input" in st.session_state:
-                del st.session_state.header_json_input
-
-            # Limpar também o merchant_name global
-            if "global_merchant_name" in st.session_state:
-                st.session_state.global_merchant_name = "Fake callback - "
+            # IMPORTANTE: Usar del ao invés de atribuição dentro de callbacks
+            for key in list(st.session_state.keys()):
+                # Deletar apenas chaves relacionadas ao formulário, não a autenticação
+                if key in [
+                    "json_generated",
+                    "generated_result",
+                    "generated_result_obj",
+                    "previous_transaction_type",
+                    "last_header_json_hash",
+                    "transaction_type_select",
+                    "header_json_input",
+                    "global_merchant_name",
+                    "pix_has_existing",
+                    "deb_has_existing",
+                    "cred_has_existing",
+                    "has_existing_trans",
+                ]:
+                    if key in st.session_state:
+                        del st.session_state[key]
 
             # Reexecutar página para mostrar formulário vazio
             st.rerun()

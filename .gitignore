@@ -39,9 +39,14 @@ nul
 !img/
 !img/logo_S2.png
 
-# IMPORTANTE: Manter arquivo de credenciais e configuração de autenticação
-!credentials.json
-!config.yaml
+# SEGURANÇA: NUNCA commitar arquivos de credenciais ou senhas
+# Use os arquivos .TEMPLATE como referência e crie os reais localmente
+credentials.json
+config.yaml
 
 # Log de usuários (rastreamento de criações/modificações)
 usuarios_log.txt
+
+# Keep template files for reference
+!credentials.json.TEMPLATE
+!config.yaml.TEMPLATE
