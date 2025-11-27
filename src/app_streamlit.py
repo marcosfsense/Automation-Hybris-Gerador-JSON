@@ -1481,6 +1481,11 @@ if transaction_type:
                     # Apenas preparar dados do JSON colado
                     trans_data = prefill_trans if prefill_trans else {}
                     if trans_data:
+                        # Extrair numberOfQuotas se for CREDITO e passar como number_of_quotas
+                        if trans_data.get("payment_fields"):
+                            num_quotas = trans_data["payment_fields"].get("numberOfQuotas")
+                            if num_quotas and isinstance(num_quotas, int):
+                                trans_data["number_of_quotas"] = num_quotas
                         temp_transactions[idx] = trans_data
 
                 else:  # has_existing_trans == "Não"
