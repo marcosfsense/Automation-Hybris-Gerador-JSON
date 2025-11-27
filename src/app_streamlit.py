@@ -85,17 +85,20 @@ def load_credentials() -> dict:
         "version": "1.0"
     }
 
-    # Se encontrou arquivo, ler dados
+    # Se encontrou arquivo, SEMPRE tentar ler seus dados (mesmo que vazio/corrompido)
     if creds_path:
         try:
             with open(creds_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                if data and "users" in data and data["users"]:
-                    return data
-        except Exception:
-            pass
+                # Retornar dados do arquivo, seja qual for (incluindo vazio)
+                # NUNCA sobrescrever arquivo existente com valores padrão
+                return data if data else default_creds
+        except (json.JSONDecodeError, IOError):
+            # Se arquivo está corrompido, retornar padrão mas NÃO sobrescrever arquivo
+            # para não perder dados
+            return default_creds
 
-    # Se não encontrou, criar arquivo no primeiro caminho possível (raiz do projeto)
+    # APENAS criar arquivo se não existir NENHUM credentials.json
     if not creds_path:
         creds_path = Path(__file__).parent.parent / "credentials.json"
         try:
@@ -105,6 +108,9 @@ def load_credentials() -> dict:
             pass
 
     return default_creds
+
+# Carregar credenciais (para compatibilidade com gerenciamento de usuários)
+credentials = load_credentials()
 
 # Inicializar autenticador
 authenticator = load_authenticator()
