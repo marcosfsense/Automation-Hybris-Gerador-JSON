@@ -169,6 +169,21 @@ else:
 # GERENCIAMENTO DE USUÁRIOS - Funções para administração
 # ═══════════════════════════════════════════════════════════════════════
 
+def log_user_action(action: str, username: str, details: str = "") -> None:
+    """
+    Registra ações de usuários em um arquivo de log para rastreamento.
+    Importante: Evita perda de dados se sincronização falhar.
+    """
+    try:
+        log_path = Path(__file__).parent.parent / "usuarios_log.txt"
+        timestamp = __import__('datetime').datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_entry = f"[{timestamp}] {action}: {username} {details}\n"
+
+        with open(log_path, 'a', encoding='utf-8') as f:
+            f.write(log_entry)
+    except Exception:
+        pass  # Falha silenciosa para não bloquear operação
+
 def save_credentials(data: dict) -> None:
     """Salva credenciais no arquivo JSON"""
     # Tentar múltiplos caminhos possíveis
@@ -372,6 +387,8 @@ def page_admin_users():
                     }
 
                     if save_credentials(credentials):
+                        # Registrar criação do usuário em log
+                        log_user_action("CREATE", new_username, f"email={new_email}")
                         st.success(f"✅ Usuário '{new_username}' criado com sucesso!")
                         st.info(f"💡 Dica: O usuário pode fazer login agora com:\n- Usuário: **{new_username}**\n- Senha: **{new_password}**")
                         st.balloons()
@@ -417,6 +434,8 @@ def page_admin_users():
                         credentials["users"][username_to_change]["last_modified"] = str(__import__('datetime').datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
                         if save_credentials(credentials):
+                            # Registrar mudança de senha em log
+                            log_user_action("CHANGE_PASSWORD", username_to_change)
                             st.success(f"✅ Senha de '{username_to_change}' alterada com sucesso!")
                             st.balloons()
 
@@ -440,6 +459,8 @@ def page_admin_users():
                 if st.button("❌ Confirmar Remoção", use_container_width=True, type="secondary"):
                     del credentials["users"][username_to_remove]
                     if save_credentials(credentials):
+                        # Registrar remoção do usuário em log
+                        log_user_action("DELETE", username_to_remove)
                         st.success(f"✅ Usuário '{username_to_remove}' removido com sucesso!")
                         st.rerun()
 

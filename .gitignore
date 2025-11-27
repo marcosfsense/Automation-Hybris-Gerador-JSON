@@ -42,3 +42,6 @@ nul
 # IMPORTANTE: Manter arquivo de credenciais e configuração de autenticação
 !credentials.json
 !config.yaml
+
+# Log de usuários (rastreamento de criações/modificações)
+usuarios_log.txt
