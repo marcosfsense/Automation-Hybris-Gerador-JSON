@@ -93,11 +93,10 @@ node_modules/
 !img/
 !requirements.txt
 
-# SEGURANÇA: NÃO incluir credenciais reais no container
-# Usar os arquivos .TEMPLATE como referência
-credentials.json
-config.yaml
+# Incluir credenciais no container (são essenciais para funcionamento)
+!credentials.json
+!config.yaml
 
-# Incluir templates para referência
-!credentials.json.TEMPLATE
-!config.yaml.TEMPLATE
+# Ignorar templates (não são necessários no container)
+credentials.json.TEMPLATE
+config.yaml.TEMPLATE
