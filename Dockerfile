@@ -19,6 +19,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ ./src/
 COPY img/ ./img/
 COPY .streamlit/ ./.streamlit/
+COPY config.yaml .
+COPY credentials.json .
 
 # Expor porta padrão do Streamlit
 EXPOSE 8501
