@@ -97,32 +97,128 @@ def check_password():
     if "password_correct" not in st.session_state:
         st.set_page_config(page_title="Autenticação", layout="centered")
 
-        # Renderizar formulário usando apenas Streamlit (simples e funciona)
+        # HTML puro renderizado diretamente para navegador detectar perfeitamente
+        html_content = """
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            }
+            .login-container {
+                max-width: 400px;
+                margin: 100px auto;
+                padding: 40px;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            .login-container h1 {
+                text-align: center;
+                color: #333;
+                margin-top: 0;
+            }
+            .login-container p {
+                text-align: center;
+                color: #666;
+            }
+            .login-form {
+                display: flex;
+                flex-direction: column;
+            }
+            .form-group {
+                margin-bottom: 20px;
+            }
+            .form-group label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 500;
+                color: #333;
+            }
+            .form-group input {
+                width: 100%;
+                padding: 12px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+                box-sizing: border-box;
+            }
+            .form-group input:focus {
+                outline: none;
+                border-color: #FF6B6B;
+                box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+            }
+            .login-form button {
+                padding: 12px;
+                background-color: #FF6B6B;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-weight: bold;
+                cursor: pointer;
+                font-size: 16px;
+            }
+            .login-form button:hover {
+                background-color: #ff5252;
+            }
+        </style>
+
+        <div class="login-container">
+            <h1>🔐 Acesso Restrito</h1>
+            <p>Autentique-se para continuar</p>
+
+            <form class="login-form" method="POST" action="">
+                <div class="form-group">
+                    <label for="username">Usuário:</label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="login_username"
+                        autocomplete="username"
+                        placeholder="Digite seu usuário"
+                        required
+                        autofocus
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Senha:</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="login_password"
+                        autocomplete="current-password"
+                        placeholder="Digite sua senha"
+                        required
+                    />
+                </div>
+
+                <button type="submit">🔓 Acessar</button>
+            </form>
+        </div>
+        """
+
+        st.write(html_content, unsafe_allow_html=True)
+
+        # Verificar se formulário foi enviado (Streamlit carrega valores automaticamente quando post)
+        # Usar renderizador de formulário tradicional Streamlit como fallback
         _, col_center, _ = st.columns([1, 2, 1])
 
         with col_center:
-            st.markdown("# 🔐 Acesso Restrito")
-            st.markdown("Autentique-se para continuar")
-
-            # Usar st.form que renderiza HTML padrão
-            # Importante: name= deve ser exatamente assim para navegador detectar
-            with st.form("login_form", clear_on_submit=False):
+            with st.form("login_form_fallback", clear_on_submit=False):
                 st.text_input(
-                    "Usuário:",
+                    "Ou autentique aqui:",
                     key="login_username",
-                    placeholder="Digite seu usuário"
+                    placeholder="Usuário"
                 )
                 st.text_input(
-                    "Senha:",
+                    "",
                     type="password",
                     key="login_password",
-                    placeholder="Digite sua senha"
+                    placeholder="Senha"
                 )
 
                 submitted = st.form_submit_button("🔓 Acessar", use_container_width=True)
 
                 if submitted:
-                    # Streamlit já armazena em session_state automaticamente via key=
                     password_entered()
 
                     if st.session_state.get("password_correct", False):
