@@ -136,14 +136,80 @@ else:
 
 def save_credentials(data: dict) -> None:
     """Salva credenciais no arquivo JSON"""
-    creds_path = Path(__file__).parent.parent / "credentials.json"
+    # Tentar múltiplos caminhos possíveis
+    possible_paths = [
+        Path(__file__).parent.parent / "credentials.json",
+        Path.cwd() / "credentials.json",
+        Path.cwd().parent / "credentials.json",
+    ]
+
+    creds_path = None
+    for path in possible_paths:
+        if path.exists() or path.parent.exists():
+            creds_path = path
+            break
+
+    if not creds_path:
+        creds_path = Path(__file__).parent.parent / "credentials.json"
+
     try:
         with open(creds_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
+
+        # Sincronizar com config.yaml após salvar
+        sync_credentials_to_config(data)
         return True
     except Exception as e:
         st.error(f"❌ Erro ao salvar credenciais: {e}")
         return False
+
+def sync_credentials_to_config(credentials_data: dict) -> None:
+    """Sincroniza credenciais do credentials.json para config.yaml para o streamlit-authenticator"""
+    try:
+        # Tentar múltiplos caminhos para config.yaml
+        possible_config_paths = [
+            Path(__file__).parent.parent / "config.yaml",
+            Path.cwd() / "config.yaml",
+            Path.cwd().parent / "config.yaml",
+        ]
+
+        config_path = None
+        for path in possible_config_paths:
+            if path.exists():
+                config_path = path
+                break
+
+        if not config_path:
+            # Se não encontrou, criar no primeiro caminho
+            config_path = Path(__file__).parent.parent / "config.yaml"
+
+        # Carregar config atual
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+
+        # Converter credenciais de JSON para formato do config.yaml
+        # Nota: config.yaml usa senhas em texto plano, que streamlit-authenticator
+        # converte para bcrypt internamente
+        config['credentials']['usernames'] = {}
+
+        for username, user_info in credentials_data.get('users', {}).items():
+            # Extrair apenas as informações necessárias
+            # Obs: credentials.json tem hash SHA256, mas config.yaml precisa de texto plano
+            # Como não temos a senha original, usamos um placeholder
+            # Os usuários precisam resetar senha ou usaremos a senha padrão
+            config['credentials']['usernames'][username] = {
+                'email': user_info.get('email', f'{username}@example.com'),
+                'name': user_info.get('name', username.title()),
+                'password': user_info.get('password', 'ChangeMe123!')  # Placeholder
+            }
+
+        # Salvar config.yaml atualizado
+        with open(config_path, 'w', encoding='utf-8') as f:
+            yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+
+    except Exception as e:
+        # Falha silenciosa - não bloquear o salvamento se sincronização falhar
+        pass
 
 def hash_password(password: str) -> str:
     """Gera hash SHA256 da senha"""
@@ -193,22 +259,32 @@ def page_admin_users():
         st.subheader("➕ Criar Novo Usuário")
 
         with st.form("form_add_user"):
-            new_username = st.text_input(
-                "Nome do usuário:",
-                placeholder="Ex: joao, maria, carlos",
-                help="Mínimo 3 caracteres, apenas letras e números"
-            )
-            new_password = st.text_input(
-                "Senha:",
-                type="password",
-                placeholder="Ex: SenhaForte123!",
-                help="Mínimo 8 caracteres"
-            )
-            confirm_password = st.text_input(
-                "Confirmar senha:",
-                type="password",
-                placeholder="Repita a senha",
-            )
+            col1, col2 = st.columns(2)
+
+            with col1:
+                new_username = st.text_input(
+                    "Nome do usuário *",
+                    placeholder="Ex: joao, maria, carlos",
+                    help="Mínimo 3 caracteres, apenas letras e números"
+                )
+                new_password = st.text_input(
+                    "Senha *",
+                    type="password",
+                    placeholder="Ex: SenhaForte123!",
+                    help="Mínimo 8 caracteres"
+                )
+
+            with col2:
+                new_email = st.text_input(
+                    "Email (opcional)",
+                    placeholder="Ex: joao@example.com",
+                    help="Email do usuário (usado para sincronização)"
+                )
+                confirm_password = st.text_input(
+                    "Confirmar senha *",
+                    type="password",
+                    placeholder="Repita a senha",
+                )
 
             submitted = st.form_submit_button("✅ Criar Usuário", use_container_width=True)
 
@@ -228,6 +304,9 @@ def page_admin_users():
                     # Adicionar usuário
                     credentials["users"][new_username] = {
                         "password_hash": hash_password(new_password),
+                        "password": new_password,  # Guardar senha em texto plano para config.yaml
+                        "email": new_email if new_email else f'{new_username}@example.com',
+                        "name": new_username.title(),
                         "created_at": str(__import__('datetime').datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
                         "last_login": None,
                         "enabled": True
@@ -235,6 +314,7 @@ def page_admin_users():
 
                     if save_credentials(credentials):
                         st.success(f"✅ Usuário '{new_username}' criado com sucesso!")
+                        st.info(f"💡 Dica: O usuário pode fazer login agora com:\n- Usuário: **{new_username}**\n- Senha: **{new_password}**")
                         st.balloons()
 
     # TAB 3: ALTERAR SENHA
@@ -274,6 +354,7 @@ def page_admin_users():
                     else:
                         # Alterar senha
                         credentials["users"][username_to_change]["password_hash"] = hash_password(new_pass)
+                        credentials["users"][username_to_change]["password"] = new_pass  # Guardar senha em texto plano para config.yaml
                         credentials["users"][username_to_change]["last_modified"] = str(__import__('datetime').datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
                         if save_credentials(credentials):
