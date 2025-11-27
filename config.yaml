@@ -11,5 +11,4 @@ cookie:
   name: hybris_json_generator_auth
 
 preauthorized:
-  emails:
-    - marco@sensebike.com.br
+  emails: []

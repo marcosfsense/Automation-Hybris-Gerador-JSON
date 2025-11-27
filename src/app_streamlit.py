@@ -50,8 +50,7 @@ def load_authenticator():
             credentials=config.get('credentials', {}),
             cookie_name=config.get('cookie', {}).get('name', 'hybris_auth'),
             cookie_key=config.get('cookie', {}).get('key', 'secret'),
-            cookie_expiry_days=config.get('cookie', {}).get('expiry_days', 30),
-            preauthorized=config.get('preauthorized', {}).get('emails', [])
+            cookie_expiry_days=config.get('cookie', {}).get('expiry_days', 30)
         )
         return authenticator
     except Exception as e:
@@ -114,7 +113,7 @@ authenticator = load_authenticator()
 try:
     authenticator.login()
 except Exception as e:
-    st.error(f"Erro ao exibir widget de login: {str(e)}")
+    st.error(f"❌ Erro ao exibir widget de login: {str(e)}")
 
 # Verificar se o usuário está autenticado
 if st.session_state["authentication_status"]:
