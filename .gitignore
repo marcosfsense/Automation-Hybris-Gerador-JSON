@@ -39,5 +39,6 @@ nul
 !img/
 !img/logo_S2.png
 
-# IMPORTANTE: Manter arquivo de credenciais
+# IMPORTANTE: Manter arquivo de credenciais e configuração de autenticação
 !credentials.json
+!config.yaml
