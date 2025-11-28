@@ -15,7 +15,7 @@ import sys
 # ═══════════════════════════════════════════════════════════════════════
 
 DB_CONFIG = {
-    'host': 'localhost',
+    'host': 'u48cw44ccwg4sowco4044goc',  # Container PostgreSQL da aplicação no Coolify
     'port': 5432,
     'database': 'postgres',
     'user': 'postgres',
