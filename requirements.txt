@@ -9,6 +9,9 @@ streamlit-authenticator>=0.2.1
 # YAML para carregar config
 PyYAML>=6.0
 
+# PostgreSQL (para futuro uso de banco de dados)
+psycopg2-binary>=2.9.0
+
 # Nota: Python 3.9+ já inclui zoneinfo
 # Para Python 3.7-3.8, descomente a linha abaixo:
 # backports.zoneinfo>=0.2.1
