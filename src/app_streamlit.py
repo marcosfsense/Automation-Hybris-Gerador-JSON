@@ -72,6 +72,7 @@ def load_credentials() -> dict:
 
         if db_users and "users" in db_users and db_users["users"]:
             # PostgreSQL tem dados - USAR APENAS POSTGRESQL
+            print(f"✅ Carregados {len(db_users['users'])} usuários do PostgreSQL")
             return db_users
     except Exception as e:
         # PostgreSQL indisponível, fazer fallback para arquivo
@@ -116,7 +117,8 @@ credentials = load_credentials()
 # Isso CONVERTE de credentials.json (PostgreSQL) para o formato do config.yaml
 try:
     sync_credentials_to_config(credentials)
-except Exception:
+except Exception as e:
+    print(f"⚠️ Erro ao sincronizar credentials para config.yaml: {e}")
     pass  # Falha silenciosa
 
 # ✨ PASSO 3: AGORA inicializar o authenticator (com dados já sincronizados)
@@ -270,6 +272,7 @@ def sync_config_to_credentials(config_data: dict, credentials_data: dict) -> dic
 
 def sync_credentials_to_config(credentials_data: dict) -> None:
     """Sincroniza credenciais do credentials.json para config.yaml para o streamlit-authenticator"""
+    print(f"DEBUG sync_credentials_to_config - Usuários recebidos: {list(credentials_data.get('users', {}).keys())}")
     try:
         # Tentar múltiplos caminhos para config.yaml
         possible_config_paths = [
@@ -300,12 +303,20 @@ def sync_credentials_to_config(credentials_data: dict) -> None:
         for username, user_info in credentials_data.get('users', {}).items():
             # Extrair apenas as informações necessárias
             # Obs: credentials.json tem hash SHA256, mas config.yaml precisa de texto plano
-            # Como não temos a senha original, usamos um placeholder
-            # Os usuários precisam resetar senha ou usaremos a senha padrão
+            # Usar campo 'password' que foi salvo em texto plano no PostgreSQL
+            password_plain = user_info.get('password', '').strip()
+
+            # Se password estiver vazio, usar um placeholder genérico
+            if not password_plain:
+                password_plain = f'{username}@123456'  # Placeholder baseado no username
+                print(f"⚠️ Senha vazia para {username}, usando placeholder: {password_plain}")
+
+            print(f"✅ Sincronizando {username}: senha={'[preenchida]' if password_plain else '[vazia]'}")
+
             config['credentials']['usernames'][username] = {
                 'email': user_info.get('email', f'{username}@example.com'),
                 'name': user_info.get('name', username.title()),
-                'password': user_info.get('password', 'ChangeMe123!')  # Placeholder
+                'password': password_plain
             }
 
         # Salvar config.yaml atualizado
