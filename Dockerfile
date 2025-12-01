@@ -24,6 +24,7 @@ COPY config.yaml .
 
 # Copiar scripts de migração e utilitários
 COPY migrate_users_to_postgres.py .
+COPY verificar_usuarios_postgres.py .
 
 # Expor porta padrão do Streamlit
 EXPOSE 8501
