@@ -22,9 +22,11 @@ COPY .streamlit/ ./.streamlit/
 COPY credentials.json .
 COPY config.yaml .
 
-# Copiar scripts de migração e utilitários
+# Copiar scripts de migração, diagnóstico e utilitários
 COPY migrate_users_to_postgres.py .
 COPY verificar_usuarios_postgres.py .
+COPY diagnostico_completo.py .
+COPY debug_sync.py .
 
 # Expor porta padrão do Streamlit
 EXPOSE 8501
