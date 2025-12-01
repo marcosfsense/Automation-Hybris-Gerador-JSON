@@ -124,25 +124,47 @@ except Exception as e:
 # ✨ PASSO 3: AGORA inicializar o authenticator (com dados já sincronizados)
 authenticator = load_authenticator()
 
+# ✨ FUNÇÃO AUXILIAR: Botão de Logout Universal
+def show_logout_button():
+    """Mostra botão de logout em caso de erro de autenticação"""
+    st.divider()
+    st.subheader("⚠️ Erro de Autenticação")
+    st.info("""
+    💡 **Dica**: Se está vendo este erro:
+    1. Clique em "🔓 Fazer Logout" para limpar a sessão
+    2. Atualize a página (F5)
+    3. Tente fazer login novamente
+    """)
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("🔓 Fazer Logout", use_container_width=True, type="primary"):
+            # Limpar TODOS os dados de autenticação da sessão
+            st.session_state.clear()
+            st.rerun()
+
+    with col2:
+        if st.button("🔄 Tentar Novamente", use_container_width=True):
+            # Limpar dados de auth específicos
+            for key in list(st.session_state.keys()):
+                if "auth" in key.lower() or "login" in key.lower():
+                    del st.session_state[key]
+            st.rerun()
+
+    with col3:
+        if st.button("🔃 Recarregar Página", use_container_width=True):
+            st.rerun()
+
+    st.stop()
+
 # Renderizar widget de login
 try:
     authenticator.login()
 except Exception as e:
-    # Erro ao exibir widget de login
-    st.error(f"❌ Erro ao exibir widget de login: {str(e)}")
-
-    # Oferecer opção de tentar novamente
-    st.info("💡 Dica: Atualize a página ou tente fazer login novamente.")
-
-    # Botão para limpar session state e fazer logout
-    if st.button("🔄 Tentar Novamente", use_container_width=True, type="primary"):
-        # Limpar estado da sessão
-        for key in list(st.session_state.keys()):
-            if key.startswith("auth"):
-                del st.session_state[key]
-        st.rerun()
-
-    st.stop()
+    # Erro ao exibir widget de login - mostrar opções de logout
+    st.error(f"❌ Erro ao exibir widget de login")
+    print(f"DEBUG: Erro detalhado: {str(e)}")
+    show_logout_button()
 
 # Verificar se o usuário está autenticado
 if st.session_state["authentication_status"]:
@@ -160,22 +182,9 @@ if st.session_state["authentication_status"]:
 
     # Continuar com o aplicativo
 elif st.session_state["authentication_status"] is False:
-    # Credenciais inválidas
+    # Credenciais inválidas ou erro de autenticação
     st.error("❌ Usuário ou senha incorretos")
-
-    # Ofercer opção de tentar novamente
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🔄 Tentar Novamente", use_container_width=True):
-            st.rerun()
-    with col2:
-        if st.button("🔓 Limpar Dados", use_container_width=True, type="secondary"):
-            for key in list(st.session_state.keys()):
-                if key.startswith("auth"):
-                    del st.session_state[key]
-            st.rerun()
-
-    st.stop()
+    show_logout_button()
 else:
     # Não tentou fazer login ainda
     st.warning("⚠️ Por favor, faça login para continuar")
