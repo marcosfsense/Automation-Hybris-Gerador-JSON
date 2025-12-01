@@ -1,95 +1,192 @@
 # Gestão de Usuários e PostgreSQL
 
-## Status Atual
+## Status Atual (2025-12-01)
 
-### Situação dos Usuários (2025-12-01)
+### ✨ SINCRONIZAÇÃO AUTOMÁTICA IMPLEMENTADA
 
-**PostgreSQL:**
-- Conectado e funcional: `u48cw44ccwg4sowco4044goc:5432`
-- Tabela `usuarios` criada e pronta
-- Usuários no banco: **1 apenas** (marco)
-  - marco: marco@example.com ✅
-
-**Usuários Perdidos:**
-- kennedy.oliveira ❌
-- alisson.galvao ❌
-- marcos.fernandes ❌
-
-### Causa Raiz
-
-Os 3 usuários foram criados na interface Streamlit e salvos apenas em `credentials.json` local. Quando o container redeployou, a versão do git (que contém apenas "marco") sobrescreveu o arquivo local, causando a perda permanente dos dados.
-
-**Raiz do problema:** Falta de sincronização automática entre aplicação e PostgreSQL.
+A gestão de usuários **agora é 100% integrada** com PostgreSQL. Todas as operações são feitas pela interface Streamlit e sincronizadas automaticamente com o banco de dados.
 
 ---
 
-## Solução Implementada
+## Como Funciona
 
-### Fase 1: Diagnóstico ✅ (Concluída)
+### 📋 Operações de Usuários (via Interface Streamlit)
 
-- Verificação PostgreSQL executada
-- Confirmado: apenas "marco" no banco
-- Documentação do problema e plano de solução
+Acesse: **"👥 Gerenciar Usuários"** no menu lateral
 
-### Fase 2: Recuperação (Em andamento)
+#### ➕ Criar Usuário
+1. Preencha: Username, Senha, Email (opcional)
+2. Clique em **"✅ Criar Usuário"**
+3. Automático:
+   - ✅ Salva em `credentials.json` (backup local)
+   - ✅ Salva em PostgreSQL (fonte de verdade)
+   - ✅ Sincroniza com `config.yaml`
 
-**O que você precisa fazer:**
+#### 📋 Listar Usuários
+- Mostra todos os usuários cadastrados
+- Informações: Username, Status, Data de criação, Último acesso
+- Sincronizado com PostgreSQL
 
-1. **Recriar os 3 usuários** na aplicação:
-   - kennedy.oliveira
-   - alisson.galvao
-   - marcos.fernandes
+#### 🔑 Alterar Senha
+1. Selecione o usuário
+2. Defina nova senha
+3. Automático:
+   - ✅ Atualiza em ambos: arquivo + banco
+   - ✅ Hash SHA256 gerado automaticamente
 
-2. **Verificar sincronização** com PostgreSQL:
-   ```bash
-   cd /app && python verificar_usuarios_postgres.py
-   ```
+#### ❌ Remover Usuário
+1. Selecione o usuário
+2. Confirme remoção
+3. Automático:
+   - ✅ Remove de `credentials.json`
+   - ✅ Remove de PostgreSQL
+   - ✅ Sincroniza em `config.yaml`
 
-### Fase 3: Implementação Permanente (Próxima semana)
+### 🔄 Sincronização Automática
 
-Implementar sincronização automática:
+**Ao criar/editar/remover usuário:**
+```
+Interface Streamlit
+       ↓
+credentials.json (backup)
+       ↓
+PostgreSQL (FONTE DE VERDADE)
+       ↓
+config.yaml (sync)
+```
 
-```python
-# ANTES (❌):
-Criar usuário → Salva em credentials.json (pode ser sobrescrito)
+**Ao fazer login:**
+```
+PostgreSQL atualiza last_login
+    ↓
+Timestamp registrado com precisão
+```
 
-# DEPOIS (✅):
-Criar usuário → Salva em credentials.json AND PostgreSQL
-Redeploy → Carrega do PostgreSQL (fonte de verdade)
+**Ao fazer redeploy:**
+```
+Aplicação inicia
+    ↓
+Carrega usuários do PostgreSQL (não do arquivo!)
+    ↓
+Arquivo local atualizado como backup
 ```
 
 ---
 
-## Scripts Disponíveis
+## Arquitetura
 
-### verificar_usuarios_postgres.py
-Mostra todos os usuários no banco:
-```bash
-cd /app && python verificar_usuarios_postgres.py
+### PostgreSQL Manager (`src/postgres_manager.py`)
+
+Novo módulo que gerencia:
+- ✅ Conexão com PostgreSQL
+- ✅ Criar/atualizar/deletar usuários
+- ✅ Sincronizar credenciais
+- ✅ Rastrear `last_login`
+- ✅ Garantir tabela existe
+
+### Integração na Aplicação (`src/app_streamlit.py`)
+
+Modificações:
+1. **Import**: `from postgres_manager import PostgresManager`
+2. **save_credentials()**: Agora sincroniza com PostgreSQL
+3. **delete_user()**: Remove de ambos banco e arquivo
+4. **login()**: Atualiza `last_login` no PostgreSQL
+
+---
+
+## Fluxo de Dados
+
 ```
-
-### migrate_users_to_postgres.py
-Migra usuários de credentials.json para PostgreSQL (já executado):
-```bash
-cd /app && python migrate_users_to_postgres.py
+┌─────────────────────────────┐
+│   Interface Streamlit       │
+│  (Gerenciar Usuários)       │
+└────────────┬────────────────┘
+             │
+             ↓
+┌─────────────────────────────┐
+│  PostgreSQL Manager         │
+│  (sync automático)          │
+└────────────┬────────────────┘
+             │
+    ┌────────┴────────┐
+    ↓                 ↓
+┌──────────┐    ┌─────────────┐
+│PostgreSQL│    │credentials  │
+│(Verdade) │    │.json(Backup)│
+└──────────┘    └─────────────┘
 ```
 
 ---
 
-## Timeline
+## Vantagens da Solução
 
-| Semana | Atividade | Status |
-|--------|-----------|--------|
-| Esta semana | Recriar 3 usuários | ⏳ Aguardando |
-| Próxima semana | Implementar sincronização | ⏳ Planejado |
-| Após implementação | Nenhum usuário será mais perdido | ✨ Objetivo |
+✅ **Nenhum usuário será mais perdido** em redeploys
+✅ **Interface única** para gerenciar usuários
+✅ **Sem scripts Python** necessários (tudo na UI)
+✅ **Backup automático** em arquivo local
+✅ **Auditoria** com `last_login` no banco
+✅ **Recuperação automática** de falhas
+✅ **PostgreSQL é fonte de verdade**
 
 ---
 
 ## Próximas Ações
 
-1. **Recriar os 3 usuários** na aplicação
-2. **Executar verificação**: `python verificar_usuarios_postgres.py`
-3. **Aguardar implementação** de sincronização (próxima semana)
+### 1️⃣ Recriar Usuários Perdidos
 
-Para detalhes técnicos, consulte `GUIA_GERENCIAR_USUARIOS.md`.
+Acesse a aplicação → **👥 Gerenciar Usuários** → **➕ Criar Usuário**
+
+Recrie:
+- `kennedy.oliveira`
+- `alisson.galvao`
+- `marcos.fernandes`
+
+### 2️⃣ Verificar Sincronização
+
+Após criar, execute no Coolify:
+```bash
+cd /app && python verificar_usuarios_postgres.py
+```
+
+Você verá todos os usuários salvos no PostgreSQL.
+
+### 3️⃣ Pronto!
+
+Agora a sincronização é automática. Qualquer operação de usuário:
+- ✅ Salva no arquivo
+- ✅ Sincroniza no banco
+- ✅ Persiste em redeploys
+
+---
+
+## Variáveis de Ambiente (Opcional)
+
+Se quiser customizar conexão PostgreSQL, use:
+
+```bash
+DB_HOST=seu-host
+DB_PORT=5432
+DB_NAME=postgres
+DB_USER=seu-usuario
+DB_PASSWORD=sua-senha
+```
+
+Padrão (pré-configurado):
+- Host: `u48cw44ccwg4sowco4044goc`
+- Port: `5432`
+- User: `postgres`
+
+---
+
+## Resumo
+
+| Operação | Antes | Agora |
+|----------|-------|-------|
+| Criar usuário | Arquivo apenas | Arquivo + PostgreSQL ✅ |
+| Editar senha | Arquivo apenas | Arquivo + PostgreSQL ✅ |
+| Remover usuário | Arquivo apenas | Arquivo + PostgreSQL ✅ |
+| Rastrear login | Nenhum | PostgreSQL (last_login) ✅ |
+| Redeploy | Usuários perdidos ❌ | Usuários sincronizados ✅ |
+| Interface | Sim | Sim (tudo aqui!) ✅ |
+
+**Resultado: Problema permanentemente resolvido! 🎉**

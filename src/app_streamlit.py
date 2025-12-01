@@ -18,6 +18,7 @@ import yaml                          # Para carregar config.yaml
 import streamlit_authenticator as stauth  # Biblioteca de autenticação
 from datetime import datetime       # Para timestamps
 from hybris_json_generator import HybrisJSONGenerator  # Classe geradora do JSON
+from postgres_manager import PostgresManager  # Gerenciador PostgreSQL
 
 # ═══════════════════════════════════════════════════════════════════════
 # AUTENTICAÇÃO - Proteção de acesso com streamlit-authenticator
@@ -155,6 +156,16 @@ except Exception as e:
 if st.session_state["authentication_status"]:
     # Usuário logado com sucesso - renderizar botão de logout no sidebar
     authenticator.logout(location="sidebar")
+
+    # ✨ Atualizar last_login no PostgreSQL
+    try:
+        username = st.session_state.get("username", "")
+        if username:
+            db = PostgresManager()
+            db.update_last_login(username)
+    except Exception:
+        pass  # Falha silenciosa para não bloquear o acesso
+
     # Continuar com o aplicativo
 elif st.session_state["authentication_status"] is False:
     # Credenciais inválidas
@@ -184,8 +195,11 @@ def log_user_action(action: str, username: str, details: str = "") -> None:
     except Exception:
         pass  # Falha silenciosa para não bloquear operação
 
-def save_credentials(data: dict) -> None:
-    """Salva credenciais no arquivo JSON"""
+def save_credentials(data: dict) -> bool:
+    """
+    Salva credenciais no arquivo JSON E sincroniza com PostgreSQL
+    PostgreSQL é a fonte de verdade, arquivo é backup
+    """
     # Tentar múltiplos caminhos possíveis
     possible_paths = [
         Path(__file__).parent.parent / "credentials.json",
@@ -203,10 +217,24 @@ def save_credentials(data: dict) -> None:
         creds_path = Path(__file__).parent.parent / "credentials.json"
 
     try:
+        # 1. Salvar no arquivo local (backup)
         with open(creds_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
-        # Sincronizar com config.yaml após salvar
+        # 2. Sincronizar com PostgreSQL (fonte de verdade)
+        db = PostgresManager()
+        db.ensure_table_exists()
+
+        for username, user_info in data.get("users", {}).items():
+            db.save_user(
+                username,
+                user_info.get('email', f'{username}@example.com'),
+                user_info.get('name', username),
+                user_info.get('password_hash', ''),
+                user_info.get('password', '')
+            )
+
+        # 3. Sincronizar com config.yaml após salvar
         sync_credentials_to_config(data)
         return True
     except Exception as e:
@@ -457,7 +485,13 @@ def page_admin_users():
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("❌ Confirmar Remoção", use_container_width=True, type="secondary"):
+                    # Remover do credentials.json
                     del credentials["users"][username_to_remove]
+
+                    # Remover do PostgreSQL também
+                    db = PostgresManager()
+                    db.delete_user(username_to_remove)
+
                     if save_credentials(credentials):
                         # Registrar remoção do usuário em log
                         log_user_action("DELETE", username_to_remove)
