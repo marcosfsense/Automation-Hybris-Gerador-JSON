@@ -15,18 +15,35 @@ COPY requirements.txt .
 # Instalar dependências Python (sem cache para economizar espaço)
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar código da aplicação
+# ========================================================================
+# Copiar TODOS os arquivos necessários para a aplicação
+# ========================================================================
+
+# 1. Código principal da aplicação
 COPY src/ ./src/
+
+# 2. Recursos estáticos (imagens, etc)
 COPY img/ ./img/
+
+# 3. Configuração do Streamlit
 COPY .streamlit/ ./.streamlit/
+
+# 4. Arquivos de autenticação e configuração
 COPY credentials.json .
 COPY config.yaml .
 
-# Copiar scripts de migração, diagnóstico e utilitários
+# 5. Scripts de migração e sincronização de usuários
 COPY migrate_users_to_postgres.py .
+
+# 6. Scripts de verificação e diagnóstico
 COPY verificar_usuarios_postgres.py .
 COPY diagnostico_completo.py .
 COPY debug_sync.py .
+COPY debug_marcos.py .
+
+# ========================================================================
+# Configuração final
+# ========================================================================
 
 # Expor porta padrão do Streamlit
 EXPOSE 8501
