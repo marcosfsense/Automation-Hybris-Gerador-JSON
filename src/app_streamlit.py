@@ -26,6 +26,8 @@ from postgres_manager import PostgresManager  # Gerenciador PostgreSQL
 
 def load_authenticator():
     """Carrega o autenticador usando config.yaml"""
+    print("[load_authenticator] Iniciando...")
+
     # Tentar múltiplos caminhos possíveis
     possible_paths = [
         Path(__file__).parent.parent / "config.yaml",  # Caminho relativo
@@ -37,37 +39,51 @@ def load_authenticator():
     for path in possible_paths:
         if path.exists():
             config_path = path
+            print(f"[load_authenticator] Encontrado config.yaml em: {path}")
             break
 
     if not config_path:
-        st.error(f"❌ Arquivo config.yaml não encontrado. Procurado em:\n" + "\n".join(str(p) for p in possible_paths))
+        print("[load_authenticator] ERRO: config.yaml não encontrado em nenhum caminho:")
+        for p in possible_paths:
+            print(f"  - {p}")
+        st.error(f"Arquivo config.yaml nao encontrado")
         st.stop()
 
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
 
-        # DEBUG: Mostrar o que foi carregado
+        if not config:
+            print("[load_authenticator] ERRO: config.yaml está vazio!")
+            raise ValueError("config.yaml vazio")
+
+        # Extrair credenciais e mostrar debug
         credentials_config = config.get('credentials', {})
         usernames = credentials_config.get('usernames', {})
-        print(f"DEBUG load_authenticator:")
-        print(f"  - Config path: {config_path}")
-        print(f"  - Usuários no config.yaml: {list(usernames.keys())}")
-        for username, user_data in usernames.items():
-            has_password = 'password' in user_data and bool(user_data.get('password', '').strip())
-            print(f"    - {username}: senha={'[preenchida]' if has_password else '[VAZIA]'}")
 
+        print(f"[load_authenticator] Config carregado:")
+        print(f"  - Path: {config_path}")
+        print(f"  - Usuarios: {list(usernames.keys())}")
+        for username, user_data in usernames.items():
+            has_password = bool(user_data.get('password', '').strip()) if isinstance(user_data, dict) else False
+            print(f"    - {username}: email={user_data.get('email') if isinstance(user_data, dict) else 'N/A'}, senha={'[preenchida]' if has_password else '[VAZIA]'}")
+
+        # Criar authenticator
+        cookie_settings = config.get('cookie', {})
         authenticator = stauth.Authenticate(
             credentials=credentials_config,
-            cookie_name=config.get('cookie', {}).get('name', 'hybris_auth'),
-            cookie_key=config.get('cookie', {}).get('key', 'secret'),
-            cookie_expiry_days=config.get('cookie', {}).get('expiry_days', 30)
+            cookie_name=cookie_settings.get('name', 'hybris_auth'),
+            cookie_key=cookie_settings.get('key', 'secret'),
+            cookie_expiry_days=cookie_settings.get('expiry_days', 30)
         )
-        print(f"✅ Authenticator inicializado com {len(usernames)} usuários")
+        print(f"[load_authenticator] OK: Authenticator inicializado com {len(usernames)} usuarios")
         return authenticator
+
     except Exception as e:
-        print(f"❌ Erro ao carregar authenticator: {e}")
-        st.error(f"❌ Erro ao carregar configuração de autenticação: {str(e)}")
+        print(f"[load_authenticator] ERRO: {e}")
+        import traceback
+        traceback.print_exc()
+        st.error(f"Erro ao carregar authenticator: {str(e)}")
         st.stop()
 
 def load_credentials() -> dict:
@@ -77,23 +93,28 @@ def load_credentials() -> dict:
     Arquivo JSON é usado APENAS como fallback se PostgreSQL indisponível.
     """
     # ✨ PRIORIDADE 1: Carregar SEMPRE do PostgreSQL (fonte de verdade)
+    print("[load_credentials] Iniciando carregamento...")
     try:
+        print("[load_credentials] Conectando a PostgreSQL...")
         db = PostgresManager()
         db.ensure_table_exists()
         db_users = db.load_all_users()
 
         if db_users and "users" in db_users and db_users["users"]:
             # PostgreSQL tem dados - USAR APENAS POSTGRESQL
-            print(f"✅ Carregados {len(db_users['users'])} usuários do PostgreSQL:")
+            print(f"[load_credentials] OK: Carregados {len(db_users['users'])} usuarios do PostgreSQL:")
             for username, user_info in db_users['users'].items():
-                has_password = user_info.get('password', '').strip()
-                print(f"   - {username}: senha={'[preenchida]' if has_password else '[VAZIA]'}, email={user_info.get('email', 'N/A')}")
+                password_val = user_info.get('password', '').strip()
+                print(f"  - {username}: senha={'[preenchida]' if password_val else '[VAZIA]'}, email={user_info.get('email', 'N/A')}")
             return db_users
+        else:
+            print("[load_credentials] AVISO: PostgreSQL vazio, usando fallback")
     except Exception as e:
         # PostgreSQL indisponível, fazer fallback para arquivo
-        print(f"⚠️ PostgreSQL indisponível: {e}. Usando fallback de arquivo local.")
+        print(f"[load_credentials] AVISO: PostgreSQL indisponivel: {e}. Usando fallback de arquivo local.")
 
     # FALLBACK: Carregar do arquivo APENAS se PostgreSQL falhar
+    print("[load_credentials] Tentando fallback com credentials.json...")
     possible_paths = [
         Path(__file__).parent.parent / "credentials.json",
         Path.cwd() / "credentials.json",
@@ -104,22 +125,27 @@ def load_credentials() -> dict:
     for path in possible_paths:
         if path.exists():
             creds_path = path
+            print(f"[load_credentials] Encontrado credentials.json em: {path}")
             try:
                 with open(creds_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     if data and "users" in data and data["users"]:
+                        print(f"[load_credentials] OK: Carregados {len(data['users'])} usuarios do arquivo")
                         return data
-            except (json.JSONDecodeError, IOError):
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"[load_credentials] AVISO: Erro ao ler credentials.json: {e}")
                 pass
 
     # ÚLTIMO RECURSO: Retornar usuário padrão
+    print("[load_credentials] AVISO: Usando credenciais padrao (marco apenas)")
     return {
         "users": {
             "marco": {
                 "password_hash": "sha256:8f68a0d4e226a2624a9c98778bf8d6b88919dc8a4d3b214316534272fd0490c8",
                 "created_at": "2025-11-26",
                 "last_login": None,
-                "enabled": True
+                "enabled": True,
+                "password": "SenhaForte123!Marcos"
             }
         },
         "version": "1.0"
