@@ -152,116 +152,6 @@ def load_credentials() -> dict:
         "version": "1.0"
     }
 
-# ✨ PASSO 1: Carregar credenciais DO POSTGRESQL (fonte de verdade)
-print("[startup] PASSO 1: Carregando credenciais")
-sys.stdout.flush()
-credentials = load_credentials()
-usuarios_carregados = list(credentials.get('users', {}).keys())
-print(f"[startup] Usuarios carregados: {usuarios_carregados}")
-sys.stdout.flush()
-
-# ✨ PASSO 2: Sincronizar credenciais para config.yaml (para streamlit-authenticator)
-# Isso CONVERTE de credentials.json (PostgreSQL) para o formato do config.yaml
-print("\n[startup] PASSO 2: Sincronizando para config.yaml")
-sys.stdout.flush()
-sync_status = False
-try:
-    sync_credentials_to_config(credentials)
-    sync_status = True
-    print("[startup] OK: Sincronizacao concluida com sucesso")
-except Exception as e:
-    print(f"[startup] ERRO critico ao sincronizar: {e}")
-    import traceback
-    traceback.print_exc()
-    sync_status = False
-sys.stdout.flush()
-
-# ✨ PASSO 3: AGORA inicializar o authenticator (com dados já sincronizados)
-print(f"\n[startup] PASSO 3: Inicializando authenticator (sync_status={sync_status})")
-sys.stdout.flush()
-authenticator = load_authenticator()
-sys.stdout.flush()
-
-# ✨ Inicializar flag de logout se não existir
-if "should_logout" not in st.session_state:
-    st.session_state.should_logout = False
-
-# ✨ Se usuário clicou em logout, limpar ANTES de renderizar qualquer coisa
-if st.session_state.should_logout:
-    st.session_state.clear()
-    st.rerun()
-
-# Renderizar widget de login
-auth_error = None
-try:
-    authenticator.login()
-except Exception as e:
-    # Erro ao exibir widget de login
-    auth_error = str(e)
-    print(f"DEBUG: Erro de autenticação: {auth_error}")
-
-# Verificar se o usuário está autenticado
-if st.session_state.get("authentication_status") == True:
-    # ✅ Usuário logado com sucesso
-    authenticator.logout(location="sidebar")
-
-    # ✨ Atualizar last_login no PostgreSQL
-    try:
-        username = st.session_state.get("username", "")
-        if username:
-            db = PostgresManager()
-            db.update_last_login(username)
-    except Exception:
-        pass  # Falha silenciosa para não bloquear o acesso
-
-    # Continuar com o aplicativo (resto do código)
-
-elif st.session_state.get("authentication_status") == False:
-    # ❌ Credenciais inválidas
-    st.error("❌ Usuário ou senha incorretos")
-    st.divider()
-    st.info("💡 Credenciais não reconhecidas. Clique abaixo para limpar a sessão e tentar novamente.")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🔄 Tentar Novamente", use_container_width=True, key="retry_btn"):
-            st.session_state.should_logout = True
-    with col2:
-        if st.button("🔓 Limpar Sessão Completa", use_container_width=True, type="secondary", key="clear_btn"):
-            st.session_state.should_logout = True
-    st.stop()
-
-elif auth_error:
-    # ❌ Erro ao exibir widget de login
-    st.error(f"❌ Erro ao exibir widget de login")
-    st.divider()
-    st.subheader("⚠️ Erro de Autenticação")
-    st.warning(f"**Erro**: {auth_error}")
-
-    st.info("""
-    ### 💡 Soluções:
-    1. **Fazer Logout** - Limpa a sessão completamente
-    2. **Tentar Novamente** - Tenta recarregar o formulário
-    3. **Recarregar Página** - Atualizar F5 no navegador
-    """)
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("🔓 Fazer Logout", use_container_width=True, type="primary", key="logout_btn"):
-            st.session_state.should_logout = True
-    with col2:
-        if st.button("🔄 Tentar Novamente", use_container_width=True, key="retry2_btn"):
-            st.session_state.should_logout = True
-    with col3:
-        if st.button("🔃 Recarregar", use_container_width=True, key="refresh_btn"):
-            st.rerun()
-    st.stop()
-
-else:
-    # ⏳ Não tentou fazer login ainda
-    st.warning("⚠️ Por favor, faça login para continuar")
-    st.stop()
-
 def sync_credentials_to_config(credentials_data: dict) -> None:
     """Sincroniza credenciais do credentials.json para config.yaml para o streamlit-authenticator"""
     print(f"  [sync_credentials_to_config] Usuarios recebidos: {list(credentials_data.get('users', {}).keys())}")
@@ -953,6 +843,121 @@ def extract_transaction_from_hybris(data: dict) -> dict:
     # Se nada encontrar, retornar o original
     # (pode ser que já seja a transação correta mesmo sem amount no nível superior)
     return data
+
+# ═══════════════════════════════════════════════════════════════════════
+# STARTUP - Executa ao inicializar a aplicação
+# ═══════════════════════════════════════════════════════════════════════
+# AGORA todos as funções já estão definidas, seguro chamar!
+
+# ✨ PASSO 1: Carregar credenciais DO POSTGRESQL (fonte de verdade)
+print("[startup] PASSO 1: Carregando credenciais")
+sys.stdout.flush()
+credentials = load_credentials()
+usuarios_carregados = list(credentials.get('users', {}).keys())
+print(f"[startup] Usuarios carregados: {usuarios_carregados}")
+sys.stdout.flush()
+
+# ✨ PASSO 2: Sincronizar credenciais para config.yaml (para streamlit-authenticator)
+# Isso CONVERTE de credentials.json (PostgreSQL) para o formato do config.yaml
+print("\n[startup] PASSO 2: Sincronizando para config.yaml")
+sys.stdout.flush()
+sync_status = False
+try:
+    sync_credentials_to_config(credentials)
+    sync_status = True
+    print("[startup] OK: Sincronizacao concluida com sucesso")
+except Exception as e:
+    print(f"[startup] ERRO critico ao sincronizar: {e}")
+    import traceback
+    traceback.print_exc()
+    sync_status = False
+sys.stdout.flush()
+
+# ✨ PASSO 3: AGORA inicializar o authenticator (com dados já sincronizados)
+print(f"\n[startup] PASSO 3: Inicializando authenticator (sync_status={sync_status})")
+sys.stdout.flush()
+authenticator = load_authenticator()
+sys.stdout.flush()
+
+# ✨ Inicializar flag de logout se não existir
+if "should_logout" not in st.session_state:
+    st.session_state.should_logout = False
+
+# ✨ Se usuário clicou em logout, limpar ANTES de renderizar qualquer coisa
+if st.session_state.should_logout:
+    st.session_state.clear()
+    st.rerun()
+
+# Renderizar widget de login
+auth_error = None
+try:
+    authenticator.login()
+except Exception as e:
+    # Erro ao exibir widget de login
+    auth_error = str(e)
+    print(f"DEBUG: Erro de autenticação: {auth_error}")
+
+# Verificar se o usuário está autenticado
+if st.session_state.get("authentication_status") == True:
+    # ✅ Usuário logado com sucesso
+    authenticator.logout(location="sidebar")
+
+    # ✨ Atualizar last_login no PostgreSQL
+    try:
+        username = st.session_state.get("username", "")
+        if username:
+            db = PostgresManager()
+            db.update_last_login(username)
+    except Exception:
+        pass  # Falha silenciosa para não bloquear o acesso
+
+    # Continuar com o aplicativo (resto do código)
+
+elif st.session_state.get("authentication_status") == False:
+    # ❌ Credenciais inválidas
+    st.error("❌ Usuário ou senha incorretos")
+    st.divider()
+    st.info("💡 Credenciais não reconhecidas. Clique abaixo para limpar a sessão e tentar novamente.")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 Tentar Novamente", use_container_width=True, key="retry_btn"):
+            st.session_state.should_logout = True
+    with col2:
+        if st.button("🔓 Limpar Sessão Completa", use_container_width=True, type="secondary", key="clear_btn"):
+            st.session_state.should_logout = True
+    st.stop()
+
+elif auth_error:
+    # ❌ Erro ao exibir widget de login
+    st.error(f"❌ Erro ao exibir widget de login")
+    st.divider()
+    st.subheader("⚠️ Erro de Autenticação")
+    st.warning(f"**Erro**: {auth_error}")
+
+    st.info("""
+    ### 💡 Soluções:
+    1. **Fazer Logout** - Limpa a sessão completamente
+    2. **Tentar Novamente** - Tenta recarregar o formulário
+    3. **Recarregar Página** - Atualizar F5 no navegador
+    """)
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("🔓 Fazer Logout", use_container_width=True, type="primary", key="logout_btn"):
+            st.session_state.should_logout = True
+    with col2:
+        if st.button("🔄 Tentar Novamente", use_container_width=True, key="retry2_btn"):
+            st.session_state.should_logout = True
+    with col3:
+        if st.button("🔃 Recarregar", use_container_width=True, key="refresh_btn"):
+            st.rerun()
+    st.stop()
+
+else:
+    # ⏳ Não tentou fazer login ainda
+    st.warning("⚠️ Por favor, faça login para continuar")
+    st.stop()
 
 # ═══════════════════════════════════════════════════════════════════════
 # CONFIGURAÇÃO DA PÁGINA - Personalizações do Streamlit
