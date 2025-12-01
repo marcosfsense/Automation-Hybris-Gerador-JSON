@@ -47,14 +47,26 @@ def load_authenticator():
         with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
 
+        # DEBUG: Mostrar o que foi carregado
+        credentials_config = config.get('credentials', {})
+        usernames = credentials_config.get('usernames', {})
+        print(f"DEBUG load_authenticator:")
+        print(f"  - Config path: {config_path}")
+        print(f"  - Usuários no config.yaml: {list(usernames.keys())}")
+        for username, user_data in usernames.items():
+            has_password = 'password' in user_data and bool(user_data.get('password', '').strip())
+            print(f"    - {username}: senha={'[preenchida]' if has_password else '[VAZIA]'}")
+
         authenticator = stauth.Authenticate(
-            credentials=config.get('credentials', {}),
+            credentials=credentials_config,
             cookie_name=config.get('cookie', {}).get('name', 'hybris_auth'),
             cookie_key=config.get('cookie', {}).get('key', 'secret'),
             cookie_expiry_days=config.get('cookie', {}).get('expiry_days', 30)
         )
+        print(f"✅ Authenticator inicializado com {len(usernames)} usuários")
         return authenticator
     except Exception as e:
+        print(f"❌ Erro ao carregar authenticator: {e}")
         st.error(f"❌ Erro ao carregar configuração de autenticação: {str(e)}")
         st.stop()
 
@@ -72,7 +84,10 @@ def load_credentials() -> dict:
 
         if db_users and "users" in db_users and db_users["users"]:
             # PostgreSQL tem dados - USAR APENAS POSTGRESQL
-            print(f"✅ Carregados {len(db_users['users'])} usuários do PostgreSQL")
+            print(f"✅ Carregados {len(db_users['users'])} usuários do PostgreSQL:")
+            for username, user_info in db_users['users'].items():
+                has_password = user_info.get('password', '').strip()
+                print(f"   - {username}: senha={'[preenchida]' if has_password else '[VAZIA]'}, email={user_info.get('email', 'N/A')}")
             return db_users
     except Exception as e:
         # PostgreSQL indisponível, fazer fallback para arquivo
@@ -331,10 +346,13 @@ def sync_credentials_to_config(credentials_data: dict) -> None:
         # Salvar config.yaml atualizado
         with open(config_path, 'w', encoding='utf-8') as f:
             yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+        print(f"✅ config.yaml atualizado em: {config_path}")
 
     except Exception as e:
-        # Falha silenciosa - não bloquear o salvamento se sincronização falhar
-        pass
+        # NÃO fazer falha silenciosa - mostrar o erro para debug
+        print(f"❌ ERRO ao sincronizar credentials para config.yaml: {e}")
+        import traceback
+        traceback.print_exc()
 
 def hash_password(password: str) -> str:
     """Gera hash SHA256 da senha"""
