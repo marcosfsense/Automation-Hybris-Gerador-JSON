@@ -130,13 +130,21 @@ credentials = load_credentials()
 
 # ✨ PASSO 2: Sincronizar credenciais para config.yaml (para streamlit-authenticator)
 # Isso CONVERTE de credentials.json (PostgreSQL) para o formato do config.yaml
+print("\n📊 INICIANDO SINCRONIZAÇÃO DE CREDENCIAIS")
+print(f"Credenciais carregadas: {list(credentials.get('users', {}).keys())}")
+sync_status = False
 try:
     sync_credentials_to_config(credentials)
+    sync_status = True
+    print("✅ Sincronização concluída com sucesso")
 except Exception as e:
-    print(f"⚠️ Erro ao sincronizar credentials para config.yaml: {e}")
-    pass  # Falha silenciosa
+    print(f"❌ Erro crítico ao sincronizar credentials para config.yaml: {e}")
+    import traceback
+    traceback.print_exc()
+    sync_status = False
 
 # ✨ PASSO 3: AGORA inicializar o authenticator (com dados já sincronizados)
+print(f"\n📊 INICIALIZANDO AUTHENTICATOR (sync_status={sync_status})")
 authenticator = load_authenticator()
 
 # ✨ Inicializar flag de logout se não existir
@@ -310,63 +318,86 @@ def sync_config_to_credentials(config_data: dict, credentials_data: dict) -> dic
 
 def sync_credentials_to_config(credentials_data: dict) -> None:
     """Sincroniza credenciais do credentials.json para config.yaml para o streamlit-authenticator"""
-    print(f"DEBUG sync_credentials_to_config - Usuários recebidos: {list(credentials_data.get('users', {}).keys())}")
+    print(f"  [sync_credentials_to_config] Usuarios recebidos: {list(credentials_data.get('users', {}).keys())}")
+
+    # Tentar múltiplos caminhos para config.yaml
+    possible_config_paths = [
+        Path(__file__).parent.parent / "config.yaml",
+        Path.cwd() / "config.yaml",
+        Path.cwd().parent / "config.yaml",
+    ]
+
+    config_path = None
+    for path in possible_config_paths:
+        if path.exists():
+            config_path = path
+            print(f"  [sync] Encontrado config.yaml em: {path}")
+            break
+
+    if not config_path:
+        # Se não encontrou, criar no primeiro caminho
+        config_path = Path(__file__).parent.parent / "config.yaml"
+        print(f"  [sync] config.yaml nao encontrado, sera criado em: {config_path}")
+
+    # Carregar config atual (ou criar novo se não existir)
     try:
-        # Tentar múltiplos caminhos para config.yaml
-        possible_config_paths = [
-            Path(__file__).parent.parent / "config.yaml",
-            Path.cwd() / "config.yaml",
-            Path.cwd().parent / "config.yaml",
-        ]
-
-        config_path = None
-        for path in possible_config_paths:
-            if path.exists():
-                config_path = path
-                break
-
-        if not config_path:
-            # Se não encontrou, criar no primeiro caminho
-            config_path = Path(__file__).parent.parent / "config.yaml"
-
-        # Carregar config atual
         with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
+            if not config:
+                config = {}
+    except FileNotFoundError:
+        print(f"  [sync] Criando novo config.yaml em: {config_path}")
+        config = {}
 
-        # Converter credenciais de JSON para formato do config.yaml
-        # Nota: config.yaml usa senhas em texto plano, que streamlit-authenticator
-        # converte para bcrypt internamente
+    # Garantir estrutura básica
+    if 'credentials' not in config:
+        config['credentials'] = {}
+    if 'usernames' not in config['credentials']:
         config['credentials']['usernames'] = {}
+    if 'cookie' not in config:
+        config['cookie'] = {
+            'expiry_days': 30,
+            'key': 'gerador_json_hybris_secret_key_2025',
+            'name': 'hybris_json_generator_auth'
+        }
 
-        for username, user_info in credentials_data.get('users', {}).items():
-            # Extrair apenas as informações necessárias
-            # Obs: credentials.json tem hash SHA256, mas config.yaml precisa de texto plano
-            # Usar campo 'password' que foi salvo em texto plano no PostgreSQL
-            password_plain = user_info.get('password', '').strip()
+    # Limpar usernames existentes
+    config['credentials']['usernames'] = {}
 
-            # Se password estiver vazio, usar um placeholder genérico
-            if not password_plain:
-                password_plain = f'{username}@123456'  # Placeholder baseado no username
-                print(f"⚠️ Senha vazia para {username}, usando placeholder: {password_plain}")
+    # Converter credenciais de JSON para formato do config.yaml
+    print(f"  [sync] Sincronizando {len(credentials_data.get('users', {}))} usuarios...")
 
-            print(f"✅ Sincronizando {username}: senha={'[preenchida]' if password_plain else '[vazia]'}")
+    for username, user_info in credentials_data.get('users', {}).items():
+        # Extrair senha em texto plano
+        password_plain = user_info.get('password', '').strip()
 
-            config['credentials']['usernames'][username] = {
-                'email': user_info.get('email', f'{username}@example.com'),
-                'name': user_info.get('name', username.title()),
-                'password': password_plain
-            }
+        # Se password estiver vazio, usar um placeholder baseado no username
+        if not password_plain:
+            password_plain = f'{username}@123456'
+            print(f"  [sync] AVISO: Senha vazia para {username}, usando placeholder")
 
-        # Salvar config.yaml atualizado
+        config['credentials']['usernames'][username] = {
+            'email': user_info.get('email', f'{username}@example.com'),
+            'name': user_info.get('name', username.title()),
+            'password': password_plain
+        }
+        print(f"  [sync] OK: {username}")
+
+    # Salvar config.yaml atualizado
+    try:
         with open(config_path, 'w', encoding='utf-8') as f:
-            yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
-        print(f"✅ config.yaml atualizado em: {config_path}")
+            yaml.dump(config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        print(f"  [sync] SUCESSO: config.yaml salvo em {config_path}")
+
+        # VERIFICACAO: Ler de volta para confirmar que foi salvo
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config_verificado = yaml.safe_load(f)
+            usuarios_salvos = list(config_verificado.get('credentials', {}).get('usernames', {}).keys())
+            print(f"  [sync] VERIFICACAO: {len(usuarios_salvos)} usuarios confirmados no arquivo: {usuarios_salvos}")
 
     except Exception as e:
-        # NÃO fazer falha silenciosa - mostrar o erro para debug
-        print(f"❌ ERRO ao sincronizar credentials para config.yaml: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"  [sync] ERRO ao salvar config.yaml: {e}")
+        raise
 
 def hash_password(password: str) -> str:
     """Gera hash SHA256 da senha"""
