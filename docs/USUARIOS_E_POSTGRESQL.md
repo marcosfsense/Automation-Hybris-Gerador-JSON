@@ -2,11 +2,15 @@
 
 ## Status Atual (2025-12-01)
 
-### ✨ SINCRONIZAÇÃO AUTOMÁTICA IMPLEMENTADA - VERSÃO 2.0
+### ✨ SINCRONIZAÇÃO AUTOMÁTICA IMPLEMENTADA - VERSÃO 3.0
 
 A gestão de usuários **agora é 100% integrada** com PostgreSQL. Todas as operações são feitas pela interface Streamlit e sincronizadas automaticamente com o banco de dados.
 
-**🔧 Novo na v2.0**: Sincronização automática no startup da aplicação. Usuários do PostgreSQL são carregados automaticamente quando a aplicação inicia.
+**🔧 Novo na v3.0**:
+- PostgreSQL é a **ÚNICA e exclusiva fonte de verdade**
+- Sem mescla desnecessária com arquivo local
+- Tratamento melhorado de erros de autenticação com botões de "Tentar Novamente"
+- Ordem de inicialização corrigida para sincronização perfeita
 
 ---
 
@@ -68,21 +72,20 @@ Timestamp registrado com precisão
 ```
 Aplicação inicia (startup)
     ↓
-load_credentials() ativada
+✨ PASSO 1: load_credentials() carrega DO PostgreSQL
     ↓
-Tenta carregar arquivo credentials.json
+✨ PASSO 2: sync_credentials_to_config() converte para config.yaml
     ↓
-✨ SINCRONIZAÇÃO CRÍTICA:
-Carrega usuários do PostgreSQL (FONTE DE VERDADE)
+✨ PASSO 3: load_authenticator() inicializado com dados sincronizados
     ↓
-Mescla: PostgreSQL + arquivo local
+Usuários carregados do PostgreSQL (ÚNICA fonte) ✅
     ↓
-Atualiza credentials.json com dados do PostgreSQL
-    ↓
-Usuários autenticados e disponíveis ✅
+authenticator pronto para receber login ✅
 ```
 
-**Importante**: Se PostgreSQL estiver indisponível, aplicação usa dados do arquivo local como fallback.
+**Fallback Inteligente:**
+- PostgreSQL indisponível? Usa arquivo local como backup
+- Erro de autenticação? Botão "Tentar Novamente" ou "Limpar Dados"
 
 ---
 
@@ -193,33 +196,48 @@ Padrão (pré-configurado):
 
 ## Resumo
 
-| Operação | Antes | Agora (v2.0) |
-|----------|-------|-------|
-| Criar usuário | Arquivo apenas | Arquivo + PostgreSQL ✅ |
-| Editar senha | Arquivo apenas | Arquivo + PostgreSQL ✅ |
-| Remover usuário | Arquivo apenas | Arquivo + PostgreSQL ✅ |
-| Rastrear login | Nenhum | PostgreSQL (last_login) ✅ |
-| Redeploy | Usuários perdidos ❌ | **Sincronização automática ✅** |
-| Startup | Arquivo apenas | **PostgreSQL + Arquivo ✅** |
-| Fallback | N/A | **Arquivo se PostgreSQL indisponível ✅** |
-| Interface | Sim | Sim (tudo aqui!) ✅ |
+| Operação | Antes | v2.0 | v3.0 (Atual) |
+|----------|-------|------|------|
+| Criar usuário | Arquivo apenas | Arquivo + PostgreSQL ✅ | PostgreSQL ✅ |
+| Editar senha | Arquivo apenas | Arquivo + PostgreSQL ✅ | PostgreSQL ✅ |
+| Remover usuário | Arquivo apenas | Arquivo + PostgreSQL ✅ | PostgreSQL ✅ |
+| Rastrear login | Nenhum | PostgreSQL (last_login) ✅ | PostgreSQL (last_login) ✅ |
+| Redeploy | Usuários perdidos ❌ | Mescla (PostgreSQL + arquivo) | **Apenas PostgreSQL ✅** |
+| Startup | Arquivo apenas | PostgreSQL + mescla | **PostgreSQL direto ✅** |
+| Fallback | N/A | Arquivo se DB indisponível | **Arquivo se DB indisponível ✅** |
+| Erro Autenticação | Nenhuma opção ❌ | Nenhuma opção ❌ | **Botões "Tentar" e "Limpar" ✅** |
+| Interface | Sim | Sim ✅ | Sim ✅ |
 
 ---
 
-## Mudanças da v2.0
+## Mudanças da v3.0
 
-### ✅ Sincronização de Startup
+### ✅ PostgreSQL como ÚNICA Fonte de Verdade
 
-A aplicação agora sincroniza automaticamente com PostgreSQL quando inicia:
+**Antes (v2.0)**: Mescla de PostgreSQL + arquivo local (complexo, inconsistências)
 
-1. **load_credentials()** agora carrega do PostgreSQL
-2. **Prioridade**: PostgreSQL é fonte de verdade
-3. **Fallback**: Se PostgreSQL indisponível, usa arquivo local
-4. **Mesclagem**: Combina dados do banco com arquivo para máxima segurança
+**Agora (v3.0)**:
+- PostgreSQL = ÚNICA e exclusiva fonte de dados
+- Arquivo JSON = APENAS fallback se PostgreSQL indisponível
+- Sem mesclas desnecessárias
+- Dados sempre consistentes
+
+### ✅ Ordem de Inicialização Corrigida
+
+```
+v2.0: credentials ← arquivo → authenticator (dados desatualizados)
+v3.0: PostgreSQL → credentials → config.yaml → authenticator ✅
+```
+
+### ✅ Tratamento de Erros de Autenticação
+
+- Erro ao fazer login? Botão **"🔄 Tentar Novamente"**
+- Session state corrompido? Botão **"🔓 Limpar Dados"**
+- Interface amigável para resolver problemas
 
 ### 📋 Métodos Atualizados
 
-- `load_all_users()` - Agora retorna formato `{"users": {...}}`
-- `load_credentials()` - Agora sincroniza com PostgreSQL no startup
+- `load_credentials()` - Agora carrega APENAS de PostgreSQL
+- `authenticator.login()` - Com tratamento melhorado de exceções
 
-**Resultado: Problema permanentemente resolvido! 🎉**
+**Resultado: Solução robusta e consistente! 🎉**
