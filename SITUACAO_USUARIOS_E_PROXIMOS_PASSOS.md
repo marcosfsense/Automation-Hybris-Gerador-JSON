@@ -32,63 +32,72 @@ Quando o Coolify fez redeploy:
 - Mas nenhum sincroniza com o PostgreSQL ❌
 - Quando container reinicia: arquivo local é sobrescrito pela versão do git
 
-## 🔍 Verificação Necessária
+## 🔍 Verificação Realizada ✅
 
-**Execute no terminal Coolify:**
-
-```bash
-cd /app && python verificar_usuarios_postgres.py
-```
-
-Isso irá mostrar:
+**Resultado da execução em 2025-12-01:**
 
 ```
 ═══════════════════════════════════════════════════════════════════
 📊 VERIFICAÇÃO: Usuários no PostgreSQL
 ═══════════════════════════════════════════════════════════════════
-Total de usuários no banco: ?
+Total de usuários no banco: 1
 
 Username             Email                          Status       Criado em
 ──────────────────────────────────────────────────────────────────────────
-...
+marco                marco@example.com              Ativo        2025-11-28 19:01:26
+═══════════════════════════════════════════════════════════════════
 ```
 
-**Possíveis resultados:**
+**Conclusão: ⚠️ Apenas "marco" está no PostgreSQL**
 
-- **Se 4 usuários aparecerem:** Os dados estão no banco! Podemos recuperar.
-- **Se apenas "marco" aparecer:** Os 3 usuários foram perdidos antes da migração.
+Os 3 usuários (kennedy.oliveira, alisson.galvao, marcos.fernandes) foram **perdidos permanentemente** pois:
+- Foram criados apenas na memória da aplicação
+- Nunca foram salvos no PostgreSQL
+- Foram sobrescritos quando o container redeployou com a versão git
 
-## 📋 Plano de Solução em 3 Fases
+## 📋 Plano de Solução em 2 Fases
 
-### Fase 1: Diagnóstico (AGORA)
+### Fase 1: Diagnóstico ✅ CONCLUÍDO
 
-Execute:
-```bash
-python verificar_usuarios_postgres.py
+**Resultado:** Apenas "marco" está no PostgreSQL
+
+Os 3 usuários foram perdidos permanentemente.
+
+### Fase 2: Prevenção Permanente (PRÓXIMA SEMANA)
+
+Para **nunca mais** perder usuários, implementaremos:
+
+#### A. Sincronização Automática com PostgreSQL
+
+Quando usuário é criado/modificado na interface:
+```python
+# ANTES (❌ - só grava em arquivo):
+def criar_usuario(username, password):
+    credentials_data['users'][username] = {...}
+    save_credentials()  # Salva só em arquivo local
+
+# DEPOIS (✅ - grava em arquivo E banco):
+def criar_usuario(username, password):
+    credentials_data['users'][username] = {...}
+    save_credentials()  # Arquivo local
+    save_to_postgres(username, password)  # Banco de dados
 ```
 
-Você verá quantos usuários realmente foram salvos no PostgreSQL.
+#### B. Carregamento Inteligente no Startup
 
-### Fase 2: Recuperação (Dependendo do resultado)
-
-**Opção A - Se 4 usuários estão no PostgreSQL:**
-```bash
-# Exportar todos os usuários do banco
-python migrate_users_to_postgres.py --export-to-credentials
+```python
+# Na inicialização da aplicação:
+1. Carregar users do PostgreSQL (fonte de verdade)
+2. Sincronizar com credentials.json (backup local)
+3. Se houver diferenças, PostgreSQL vence
 ```
 
-**Opção B - Se apenas "marco" está no PostgreSQL:**
-- Os 3 usuários foram perdidos
-- Precisará criá-los novamente (desculpe!)
+#### C. Resultado Final
 
-### Fase 3: Prevenção Permanente
-
-Implementar **sincronização bidirecional com PostgreSQL**:
-
-1. ✅ Quando usuário é criado na interface → grava no PostgreSQL
-2. ✅ Quando usuário faz login → carrega do PostgreSQL
-3. ✅ Quando container reinicia → carrega do PostgreSQL (não do git)
-4. ✅ Credenciais no git são apenas backup, não fonte de verdade
+- ✅ Arquivo local (credentials.json) = Backup apenas
+- ✅ Banco de dados (PostgreSQL) = Fonte de verdade
+- ✅ Nenhum usuário será perdido em redeploys futuros
+- ✅ Recuperação automática em caso de falha
 
 ## 🗂️ Arquivos Envolvidos
 
@@ -103,27 +112,49 @@ Implementar **sincronização bidirecional com PostgreSQL**:
 
 ## 🎯 Próximas Ações
 
-### Imediato (Próximas 24h)
+### ✅ Imediato (JÁ CONCLUÍDO - 2025-12-01)
 
-1. **Execute verificação:**
-   ```bash
-   python verificar_usuarios_postgres.py
-   ```
+1. ✅ Verificação executada
+2. ✅ Resultado confirmado: apenas "marco" no PostgreSQL
+3. ✅ Documentação atualizada
 
-2. **Compartilhe resultado** - Mostre quantos usuários estão no PostgreSQL
+### 📋 Curto Prazo (HOJE/AMANHÃ)
 
-### Curto Prazo (Próximos dias)
+1. **Recriar os 3 usuários perdidos** na aplicação:
+   - kennedy.oliveira
+   - alisson.galvao
+   - marcos.fernandes
 
-Baseado no resultado, faremos:
+2. **Comando para criar (via Streamlit):**
+   - Acesse a aplicação
+   - Use o formulário de autenticação para criar novos usuários
+   - Salve as senhas com segurança
 
-- **Se 4 usuários:** Recuperar dados do banco e atualizar credentials.json
-- **Se 1 usuário:** Aceitar a perda e implementar proteção imediata
+### 🛠️ Médio Prazo (PRÓXIMA SEMANA)
 
-### Médio Prazo (Próxima semana)
+Implementar sincronização automática:
 
-- Atualizar `src/app_streamlit.py` para autenticar via PostgreSQL
-- Remover dependência de `credentials.json` como fonte de dados
-- Fazer login/logout/criação de usuários diretamente com banco
+1. **Atualizar `src/app_streamlit.py`:**
+   - Quando usuário é criado → salvar também no PostgreSQL
+   - Quando usuário faz login → carregar do PostgreSQL
+   - Quando app inicia → carregar usuários do PostgreSQL (não do git)
+
+2. **Criar funções auxiliares:**
+   - `save_user_to_postgres()` - Salva novo usuário no banco
+   - `load_users_from_postgres()` - Carrega todos os usuários
+   - `sync_postgres_to_credentials()` - Sincroniza DB → arquivo
+
+3. **Testar ciclo completo:**
+   - Criar novo usuário
+   - Fazer redeploy
+   - Verificar se usuário ainda existe
+   - ✅ Problema resolvido!
+
+### 🔐 Longo Prazo (FUTURO)
+
+- Implementar recuperação de senha via PostgreSQL
+- Adicionar auditoria de login (quem, quando, de onde)
+- Remover dependência de `credentials.json` completamente
 
 ## 📝 Resumo da Situação
 
