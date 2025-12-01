@@ -12,6 +12,7 @@ Executar com: streamlit run app_streamlit.py
 import streamlit as st              # Framework web para criar a interface
 import json                         # Biblioteca para manipular JSON
 import os                           # Funções do sistema operacional
+import sys                          # Sistema (para flush de stdout)
 import hashlib                      # Hash para detectar mudanças
 from pathlib import Path            # Trabalhar com caminhos de arquivos
 import yaml                          # Para carregar config.yaml
@@ -152,26 +153,34 @@ def load_credentials() -> dict:
     }
 
 # ✨ PASSO 1: Carregar credenciais DO POSTGRESQL (fonte de verdade)
+print("[startup] PASSO 1: Carregando credenciais")
+sys.stdout.flush()
 credentials = load_credentials()
+usuarios_carregados = list(credentials.get('users', {}).keys())
+print(f"[startup] Usuarios carregados: {usuarios_carregados}")
+sys.stdout.flush()
 
 # ✨ PASSO 2: Sincronizar credenciais para config.yaml (para streamlit-authenticator)
 # Isso CONVERTE de credentials.json (PostgreSQL) para o formato do config.yaml
-print("\n📊 INICIANDO SINCRONIZAÇÃO DE CREDENCIAIS")
-print(f"Credenciais carregadas: {list(credentials.get('users', {}).keys())}")
+print("\n[startup] PASSO 2: Sincronizando para config.yaml")
+sys.stdout.flush()
 sync_status = False
 try:
     sync_credentials_to_config(credentials)
     sync_status = True
-    print("✅ Sincronização concluída com sucesso")
+    print("[startup] OK: Sincronizacao concluida com sucesso")
 except Exception as e:
-    print(f"❌ Erro crítico ao sincronizar credentials para config.yaml: {e}")
+    print(f"[startup] ERRO critico ao sincronizar: {e}")
     import traceback
     traceback.print_exc()
     sync_status = False
+sys.stdout.flush()
 
 # ✨ PASSO 3: AGORA inicializar o authenticator (com dados já sincronizados)
-print(f"\n📊 INICIALIZANDO AUTHENTICATOR (sync_status={sync_status})")
+print(f"\n[startup] PASSO 3: Inicializando authenticator (sync_status={sync_status})")
+sys.stdout.flush()
 authenticator = load_authenticator()
+sys.stdout.flush()
 
 # ✨ Inicializar flag de logout se não existir
 if "should_logout" not in st.session_state:
