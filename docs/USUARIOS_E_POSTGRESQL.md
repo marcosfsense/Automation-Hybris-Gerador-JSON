@@ -2,15 +2,21 @@
 
 ## Status Atual (2025-12-01)
 
-### ✨ SINCRONIZAÇÃO AUTOMÁTICA IMPLEMENTADA - VERSÃO 3.0
+### ✨ SINCRONIZAÇÃO AUTOMÁTICA IMPLEMENTADA - VERSÃO 4.0
 
 A gestão de usuários **agora é 100% integrada** com PostgreSQL. Todas as operações são feitas pela interface Streamlit e sincronizadas automaticamente com o banco de dados.
 
-**🔧 Novo na v3.0**:
+**🔧 Novo na v4.0** (melhorias sobre v3.0):
+- **Logs detalhados em cada passo** da autenticação
+- **Verificação de salvamento** do config.yaml (não mais falha silenciosa)
+- **Rastreamento transparente** do fluxo de sincronização
+- **Veja [FLUXO_AUTENTICACAO_v4.md](FLUXO_AUTENTICACAO_v4.md)** para entender exatamente como funciona
+
+**🔧 Mantém de v3.0**:
 - PostgreSQL é a **ÚNICA e exclusiva fonte de verdade**
 - Sem mescla desnecessária com arquivo local
-- Tratamento melhorado de erros de autenticação com botões de "Tentar Novamente"
-- Ordem de inicialização corrigida para sincronização perfeita
+- Tratamento melhorado de erros de autenticação
+- Ordem de inicialização corrigida
 
 ---
 
