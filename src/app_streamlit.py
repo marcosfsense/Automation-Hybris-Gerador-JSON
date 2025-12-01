@@ -139,16 +139,14 @@ except Exception as e:
 # ✨ PASSO 3: AGORA inicializar o authenticator (com dados já sincronizados)
 authenticator = load_authenticator()
 
-# ✨ FUNÇÃO AUXILIAR: Limpar toda a sessão de autenticação
-def clear_auth_session():
-    """Limpa TODOS os dados de autenticação da sessão"""
-    keys_to_delete = []
-    for key in st.session_state.keys():
-        if any(x in key.lower() for x in ['auth', 'login', 'username', 'password']):
-            keys_to_delete.append(key)
+# ✨ Inicializar flag de logout se não existir
+if "should_logout" not in st.session_state:
+    st.session_state.should_logout = False
 
-    for key in keys_to_delete:
-        del st.session_state[key]
+# ✨ Se usuário clicou em logout, limpar ANTES de renderizar qualquer coisa
+if st.session_state.should_logout:
+    st.session_state.clear()
+    st.rerun()
 
 # Renderizar widget de login
 auth_error = None
@@ -179,15 +177,15 @@ elif st.session_state.get("authentication_status") == False:
     # ❌ Credenciais inválidas
     st.error("❌ Usuário ou senha incorretos")
     st.divider()
+    st.info("💡 Credenciais não reconhecidas. Clique abaixo para limpar a sessão e tentar novamente.")
+
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🔄 Tentar Novamente", use_container_width=True, key="retry"):
-            clear_auth_session()
-            st.rerun()
+        if st.button("🔄 Tentar Novamente", use_container_width=True, key="retry_btn"):
+            st.session_state.should_logout = True
     with col2:
-        if st.button("🔓 Limpar Sessão", use_container_width=True, key="clear", type="secondary"):
-            st.session_state.clear()
-            st.rerun()
+        if st.button("🔓 Limpar Sessão Completa", use_container_width=True, type="secondary", key="clear_btn"):
+            st.session_state.should_logout = True
     st.stop()
 
 elif auth_error:
@@ -206,15 +204,13 @@ elif auth_error:
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("🔓 Fazer Logout", use_container_width=True, type="primary", key="logout"):
-            clear_auth_session()
-            st.rerun()
+        if st.button("🔓 Fazer Logout", use_container_width=True, type="primary", key="logout_btn"):
+            st.session_state.should_logout = True
     with col2:
-        if st.button("🔄 Tentar Novamente", use_container_width=True, key="retry2"):
-            clear_auth_session()
-            st.rerun()
+        if st.button("🔄 Tentar Novamente", use_container_width=True, key="retry2_btn"):
+            st.session_state.should_logout = True
     with col3:
-        if st.button("🔃 Recarregar", use_container_width=True, key="refresh"):
+        if st.button("🔃 Recarregar", use_container_width=True, key="refresh_btn"):
             st.rerun()
     st.stop()
 
