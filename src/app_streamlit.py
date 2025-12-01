@@ -59,7 +59,10 @@ def load_authenticator():
         st.stop()
 
 def load_credentials() -> dict:
-    """Carrega credenciais do arquivo JSON (para compatibilidade com gerenciamento de usuários)"""
+    """
+    Carrega credenciais do arquivo JSON e sincroniza com PostgreSQL.
+    PostgreSQL é a FONTE DE VERDADE - seus usuários têm prioridade!
+    """
     # Tentar múltiplos caminhos possíveis
     possible_paths = [
         Path(__file__).parent.parent / "credentials.json",  # Caminho relativo
@@ -91,24 +94,54 @@ def load_credentials() -> dict:
         try:
             with open(creds_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                # Retornar dados do arquivo, seja qual for (incluindo vazio)
-                # NUNCA sobrescrever arquivo existente com valores padrão
-                return data if data else default_creds
+                # Dados carregados do arquivo
+                file_data = data if data else default_creds
         except (json.JSONDecodeError, IOError):
             # Se arquivo está corrompido, retornar padrão mas NÃO sobrescrever arquivo
             # para não perder dados
-            return default_creds
+            file_data = default_creds
+    else:
+        file_data = default_creds
+
+    # ✨ SINCRONIZAÇÃO CRÍTICA: Carregar usuários do PostgreSQL (fonte de verdade)
+    try:
+        db = PostgresManager()
+        db_users = db.load_all_users()
+
+        if db_users and "users" in db_users and db_users["users"]:
+            # PostgreSQL tem dados - usar como fonte de verdade
+            # Mesclar com arquivo para não perder dados locais
+            merged_users = file_data.get("users", {}).copy()
+
+            # Atualizar/adicionar usuários do PostgreSQL
+            for username, user_info in db_users.get("users", {}).items():
+                merged_users[username] = user_info
+
+            file_data["users"] = merged_users
+
+            # Salvar de volta ao arquivo para manter sincronização
+            if creds_path or (not creds_path and Path(__file__).parent.parent.exists()):
+                try:
+                    if not creds_path:
+                        creds_path = Path(__file__).parent.parent / "credentials.json"
+                    with open(creds_path, 'w', encoding='utf-8') as f:
+                        json.dump(file_data, f, indent=2, ensure_ascii=False)
+                except Exception:
+                    pass  # Falha silenciosa
+    except Exception:
+        # PostgreSQL indisponível - usar dados do arquivo
+        pass
 
     # APENAS criar arquivo se não existir NENHUM credentials.json
     if not creds_path:
         creds_path = Path(__file__).parent.parent / "credentials.json"
         try:
             with open(creds_path, 'w', encoding='utf-8') as f:
-                json.dump(default_creds, f, indent=2, ensure_ascii=False)
+                json.dump(file_data, f, indent=2, ensure_ascii=False)
         except Exception:
             pass
 
-    return default_creds
+    return file_data
 
 # Carregar credenciais (para compatibilidade com gerenciamento de usuários)
 credentials = load_credentials()

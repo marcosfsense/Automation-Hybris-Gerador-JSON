@@ -66,12 +66,12 @@ class PostgresManager:
     def load_all_users(self) -> dict:
         """
         Carrega TODOS os usuários do PostgreSQL
-        Retorna dict no formato de credentials.json
+        Retorna dict no formato de credentials.json: {"users": {...}}
         """
         try:
             conn = self.get_connection()
             if not conn:
-                return {}
+                return {"users": {}}
 
             with conn.cursor() as cur:
                 cur.execute("""
@@ -96,10 +96,11 @@ class PostgresManager:
                         'last_modified': last_modified.strftime('%Y-%m-%d %H:%M:%S') if last_modified else None
                     }
             conn.close()
-            return users
+            # Retornar no formato de credentials.json
+            return {"users": users, "version": "1.0"}
         except psycopg2.Error as e:
             print(f"❌ Erro ao carregar usuários do PostgreSQL: {e}")
-            return {}
+            return {"users": {}}
 
     def save_user(self, username: str, email: str, name: str,
                   password_hash: str, password: str, enabled: bool = True) -> bool:
