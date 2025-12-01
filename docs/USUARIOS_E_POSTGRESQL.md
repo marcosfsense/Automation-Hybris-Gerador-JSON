@@ -2,9 +2,11 @@
 
 ## Status Atual (2025-12-01)
 
-### ✨ SINCRONIZAÇÃO AUTOMÁTICA IMPLEMENTADA
+### ✨ SINCRONIZAÇÃO AUTOMÁTICA IMPLEMENTADA - VERSÃO 2.0
 
 A gestão de usuários **agora é 100% integrada** com PostgreSQL. Todas as operações são feitas pela interface Streamlit e sincronizadas automaticamente com o banco de dados.
+
+**🔧 Novo na v2.0**: Sincronização automática no startup da aplicação. Usuários do PostgreSQL são carregados automaticamente quando a aplicação inicia.
 
 ---
 
@@ -64,12 +66,23 @@ Timestamp registrado com precisão
 
 **Ao fazer redeploy:**
 ```
-Aplicação inicia
+Aplicação inicia (startup)
     ↓
-Carrega usuários do PostgreSQL (não do arquivo!)
+load_credentials() ativada
     ↓
-Arquivo local atualizado como backup
+Tenta carregar arquivo credentials.json
+    ↓
+✨ SINCRONIZAÇÃO CRÍTICA:
+Carrega usuários do PostgreSQL (FONTE DE VERDADE)
+    ↓
+Mescla: PostgreSQL + arquivo local
+    ↓
+Atualiza credentials.json com dados do PostgreSQL
+    ↓
+Usuários autenticados e disponíveis ✅
 ```
+
+**Importante**: Se PostgreSQL estiver indisponível, aplicação usa dados do arquivo local como fallback.
 
 ---
 
@@ -180,13 +193,33 @@ Padrão (pré-configurado):
 
 ## Resumo
 
-| Operação | Antes | Agora |
+| Operação | Antes | Agora (v2.0) |
 |----------|-------|-------|
 | Criar usuário | Arquivo apenas | Arquivo + PostgreSQL ✅ |
 | Editar senha | Arquivo apenas | Arquivo + PostgreSQL ✅ |
 | Remover usuário | Arquivo apenas | Arquivo + PostgreSQL ✅ |
 | Rastrear login | Nenhum | PostgreSQL (last_login) ✅ |
-| Redeploy | Usuários perdidos ❌ | Usuários sincronizados ✅ |
+| Redeploy | Usuários perdidos ❌ | **Sincronização automática ✅** |
+| Startup | Arquivo apenas | **PostgreSQL + Arquivo ✅** |
+| Fallback | N/A | **Arquivo se PostgreSQL indisponível ✅** |
 | Interface | Sim | Sim (tudo aqui!) ✅ |
+
+---
+
+## Mudanças da v2.0
+
+### ✅ Sincronização de Startup
+
+A aplicação agora sincroniza automaticamente com PostgreSQL quando inicia:
+
+1. **load_credentials()** agora carrega do PostgreSQL
+2. **Prioridade**: PostgreSQL é fonte de verdade
+3. **Fallback**: Se PostgreSQL indisponível, usa arquivo local
+4. **Mesclagem**: Combina dados do banco com arquivo para máxima segurança
+
+### 📋 Métodos Atualizados
+
+- `load_all_users()` - Agora retorna formato `{"users": {...}}`
+- `load_credentials()` - Agora sincroniza com PostgreSQL no startup
 
 **Resultado: Problema permanentemente resolvido! 🎉**
