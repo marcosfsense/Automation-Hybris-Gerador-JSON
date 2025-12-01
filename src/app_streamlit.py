@@ -1609,9 +1609,9 @@ if transaction_type:
                     # Apenas preparar dados do JSON colado
                     trans_data = prefill_trans if prefill_trans else {}
                     if trans_data:
-                        # Adicionar merchant_name global se não existir
-                        if "merchant_name" not in trans_data:
-                            trans_data["merchant_name"] = global_merchant_name
+                        # ✨ IMPORTANTE: Sempre usar o merchant_name global (da seção 2.5) para transações MULTIPLAS
+                        # Isso garante consistência em todas as transações quando coladas
+                        trans_data["merchant_name"] = global_merchant_name
 
                         # Extrair numberOfQuotas se for CREDITO e passar como number_of_quotas
                         if trans_data.get("payment_fields"):
@@ -1674,12 +1674,12 @@ if transaction_type:
                         )
 
                         # Usar merchant_name global (preenchido na seção 2.5)
+                        # IMPORTANTE: Este campo é EDITÁVEL para cada transação se o usuário desejar
                         trans_merchant = st.text_input(
                             "merchantName *",
                             value=global_merchant_name,
                             key=f"merchant_{idx}",
-                            help="Nome do estabelecimento comercial (preenchido na seção 2.5)",
-                            disabled=True  # Desabilitar pois o valor vem da seção 2.5
+                            help="Nome do estabelecimento comercial. Padrão: valor da seção 2.5. Editar aqui afeta apenas esta transação."
                         )
 
                     with col2:
