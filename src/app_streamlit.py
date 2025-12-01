@@ -60,24 +60,44 @@ def load_authenticator():
 
 def load_credentials() -> dict:
     """
-    Carrega credenciais do arquivo JSON e sincroniza com PostgreSQL.
-    PostgreSQL é a FONTE DE VERDADE - seus usuários têm prioridade!
+    Carrega credenciais APENAS do PostgreSQL (fonte de verdade).
+    PostgreSQL é a ÚNICA e exclusiva fonte de dados!
+    Arquivo JSON é usado APENAS como fallback se PostgreSQL indisponível.
     """
-    # Tentar múltiplos caminhos possíveis
+    # ✨ PRIORIDADE 1: Carregar SEMPRE do PostgreSQL (fonte de verdade)
+    try:
+        db = PostgresManager()
+        db.ensure_table_exists()
+        db_users = db.load_all_users()
+
+        if db_users and "users" in db_users and db_users["users"]:
+            # PostgreSQL tem dados - USAR APENAS POSTGRESQL
+            return db_users
+    except Exception as e:
+        # PostgreSQL indisponível, fazer fallback para arquivo
+        print(f"⚠️ PostgreSQL indisponível: {e}. Usando fallback de arquivo local.")
+
+    # FALLBACK: Carregar do arquivo APENAS se PostgreSQL falhar
     possible_paths = [
-        Path(__file__).parent.parent / "credentials.json",  # Caminho relativo
-        Path.cwd() / "credentials.json",  # Diretório atual
-        Path.cwd().parent / "credentials.json",  # Diretório pai
+        Path(__file__).parent.parent / "credentials.json",
+        Path.cwd() / "credentials.json",
+        Path.cwd().parent / "credentials.json",
     ]
 
     creds_path = None
     for path in possible_paths:
         if path.exists():
             creds_path = path
-            break
+            try:
+                with open(creds_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    if data and "users" in data and data["users"]:
+                        return data
+            except (json.JSONDecodeError, IOError):
+                pass
 
-    # Arquivo padrão APENAS se não existir
-    default_creds = {
+    # ÚLTIMO RECURSO: Retornar usuário padrão
+    return {
         "users": {
             "marco": {
                 "password_hash": "sha256:8f68a0d4e226a2624a9c98778bf8d6b88919dc8a4d3b214316534272fd0490c8",
@@ -89,101 +109,38 @@ def load_credentials() -> dict:
         "version": "1.0"
     }
 
-    # Se encontrou arquivo, SEMPRE tentar ler seus dados (mesmo que vazio/corrompido)
-    if creds_path:
-        try:
-            with open(creds_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                # Dados carregados do arquivo
-                file_data = data if data else default_creds
-        except (json.JSONDecodeError, IOError):
-            # Se arquivo está corrompido, retornar padrão mas NÃO sobrescrever arquivo
-            # para não perder dados
-            file_data = default_creds
-    else:
-        file_data = default_creds
-
-    # ✨ SINCRONIZAÇÃO CRÍTICA: Carregar usuários do PostgreSQL (fonte de verdade)
-    try:
-        db = PostgresManager()
-        db_users = db.load_all_users()
-
-        if db_users and "users" in db_users and db_users["users"]:
-            # PostgreSQL tem dados - usar como fonte de verdade
-            # Mesclar com arquivo para não perder dados locais
-            merged_users = file_data.get("users", {}).copy()
-
-            # Atualizar/adicionar usuários do PostgreSQL
-            for username, user_info in db_users.get("users", {}).items():
-                merged_users[username] = user_info
-
-            file_data["users"] = merged_users
-
-            # Salvar de volta ao arquivo para manter sincronização
-            if creds_path or (not creds_path and Path(__file__).parent.parent.exists()):
-                try:
-                    if not creds_path:
-                        creds_path = Path(__file__).parent.parent / "credentials.json"
-                    with open(creds_path, 'w', encoding='utf-8') as f:
-                        json.dump(file_data, f, indent=2, ensure_ascii=False)
-                except Exception:
-                    pass  # Falha silenciosa
-    except Exception:
-        # PostgreSQL indisponível - usar dados do arquivo
-        pass
-
-    # APENAS criar arquivo se não existir NENHUM credentials.json
-    if not creds_path:
-        creds_path = Path(__file__).parent.parent / "credentials.json"
-        try:
-            with open(creds_path, 'w', encoding='utf-8') as f:
-                json.dump(file_data, f, indent=2, ensure_ascii=False)
-        except Exception:
-            pass
-
-    return file_data
-
-# Carregar credenciais (para compatibilidade com gerenciamento de usuários)
+# ✨ PASSO 1: Carregar credenciais DO POSTGRESQL (fonte de verdade)
 credentials = load_credentials()
 
-# Inicializar autenticador
-authenticator = load_authenticator()
-
-# SINCRONIZAÇÃO BIDIRECIONAL: Recuperar usuários de config.yaml se estiverem perdidos em credentials.json
+# ✨ PASSO 2: Sincronizar credenciais para config.yaml (para streamlit-authenticator)
+# Isso CONVERTE de credentials.json (PostgreSQL) para o formato do config.yaml
 try:
-    # Tentar múltiplos caminhos para config.yaml
-    possible_config_paths = [
-        Path(__file__).parent.parent / "config.yaml",
-        Path.cwd() / "config.yaml",
-        Path.cwd().parent / "config.yaml",
-    ]
-
-    config_path = None
-    for path in possible_config_paths:
-        if path.exists():
-            config_path = path
-            break
-
-    if config_path:
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config_data = yaml.safe_load(f)
-
-        # Sincronizar config.yaml → credentials.json (recuperar usuários perdidos)
-        credentials_before = len(credentials.get('users', {}))
-        credentials = sync_config_to_credentials(config_data, credentials)
-        credentials_after = len(credentials.get('users', {}))
-
-        # Se novos usuários foram recuperados, salvar em credentials.json
-        if credentials_after > credentials_before:
-            save_credentials(credentials)
+    sync_credentials_to_config(credentials)
 except Exception:
-    pass  # Falha silenciosa na sincronização
+    pass  # Falha silenciosa
+
+# ✨ PASSO 3: AGORA inicializar o authenticator (com dados já sincronizados)
+authenticator = load_authenticator()
 
 # Renderizar widget de login
 try:
     authenticator.login()
 except Exception as e:
+    # Erro ao exibir widget de login
     st.error(f"❌ Erro ao exibir widget de login: {str(e)}")
+
+    # Oferecer opção de tentar novamente
+    st.info("💡 Dica: Atualize a página ou tente fazer login novamente.")
+
+    # Botão para limpar session state e fazer logout
+    if st.button("🔄 Tentar Novamente", use_container_width=True, type="primary"):
+        # Limpar estado da sessão
+        for key in list(st.session_state.keys()):
+            if key.startswith("auth"):
+                del st.session_state[key]
+        st.rerun()
+
+    st.stop()
 
 # Verificar se o usuário está autenticado
 if st.session_state["authentication_status"]:
@@ -203,6 +160,19 @@ if st.session_state["authentication_status"]:
 elif st.session_state["authentication_status"] is False:
     # Credenciais inválidas
     st.error("❌ Usuário ou senha incorretos")
+
+    # Ofercer opção de tentar novamente
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 Tentar Novamente", use_container_width=True):
+            st.rerun()
+    with col2:
+        if st.button("🔓 Limpar Dados", use_container_width=True, type="secondary"):
+            for key in list(st.session_state.keys()):
+                if key.startswith("auth"):
+                    del st.session_state[key]
+            st.rerun()
+
     st.stop()
 else:
     # Não tentou fazer login ainda
