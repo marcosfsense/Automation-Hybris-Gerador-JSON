@@ -459,8 +459,20 @@ def page_admin_users():
                         # Registrar criação do usuário em log
                         log_user_action("CREATE", new_username, f"email={new_email}")
                         st.success(f"✅ Usuário '{new_username}' criado com sucesso!")
-                        st.info(f"💡 Dica: O usuário pode fazer login agora com:\n- Usuário: **{new_username}**\n- Senha: **{new_password}**")
+                        st.info(f"""
+                        💡 **O usuário pode fazer login agora com:**
+                        - Usuário: **{new_username}**
+                        - Senha: **{new_password}**
+
+                        ⚠️ **Importante**: Faça logout e login novamente com o novo usuário para usar a aplicação.
+                        """)
                         st.balloons()
+
+                        # Oferecer botão para fazer logout e testar novo usuário
+                        st.info("👇 **Clique abaixo para fazer logout e testar o novo usuário**")
+                        if st.button("🔓 Fazer Logout para Testar Novo Usuário", use_container_width=True, type="primary"):
+                            st.session_state.clear()
+                            st.rerun()
 
     # TAB 3: ALTERAR SENHA
     elif tab_option == "🔑 Alterar Senha":
