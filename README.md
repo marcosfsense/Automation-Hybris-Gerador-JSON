@@ -15,9 +15,10 @@
 - [Clonando do GitHub](#-clonando-do-github)
 - [Sobre o Projeto](#-sobre)
 - [Recursos](#-recursos)
-- [Guia de Uso](#-guia-de-uso)
 - [Estrutura do Projeto](#-estrutura-do-projeto)
-- [Documentação](#-documentação)
+- [Documentação Completa](#-documentação-completa)
+- [Guia de Uso](#-guia-de-uso)
+- [Troubleshooting](#-troubleshooting)
 - [Suporte & FAQ](#-suporte--faq)
 
 ---
@@ -138,47 +139,64 @@ Sistema web desenvolvido em **Python puro** (sem dependências externas) para au
 
 ```
 AUTOMAÇÃO-HYBRIS/
-├── src/
-│   ├── app_streamlit.py              # 🖥️  Interface web Streamlit
-│   └── hybris_json_generator.py      # 🔧 Lógica de geração (Python puro)
 │
-├── docs/
-│   ├── README.md                    # 📖 Documentação técnica
-│   ├── GUIA_RAPIDO.md              # ⚡ Guia 5 minutos
-│   ├── RESUMO_EXECUTIVO.md         # 📊 Visão executiva
-│   ├── analise_jsons.md            # 🔍 Análise estrutura JSON
-│   ├── guia_implementacao_n8n.md   # 🤖 Integração n8n
-│   └── CHECKLIST_IMPLEMENTACAO.md  # ✅ Implementação passo-a-passo
+├── 📁 src/                          # 🔧 Código-fonte principal
+│   ├── app_streamlit.py             # 🖥️ Interface web + Autenticação
+│   ├── hybris_json_generator.py     # 💳 Gerador de JSONs
+│   └── postgres_manager.py          # 🗄️ Gerenciador PostgreSQL
 │
-├── examples/                         # 📄 JSONs de exemplo (todas transações)
-├── tests/
-│   └── test_validator.py           # ✔️  Suite de testes (6 cenários)
+├── 📁 tools/                        # 🛠️ Scripts de diagnóstico & manutenção
+│   ├── diagnostico_completo.py      # 🔍 Diagnóstico das 3 camadas
+│   ├── debug_sync.py                # 🔄 Teste de sincronização
+│   ├── debug_marcos.py              # 🐛 Debug específico
+│   ├── verificar_usuarios_postgres.py # 👥 Listar usuários no BD
+│   └── migrate_users_to_postgres.py  # 📤 Migrar usuários
 │
-├── README.md                        # Este arquivo
-├── requirements.txt                 # Dependências Python
-├── n8n_workflow_hybris.json        # 🤖 Workflow n8n pronto para importar
-├── Postman_Collection_Hybris.json  # 📮 Coleção Postman para testes
-├── CLAUDE.md                       # 👨‍💻 Instruções para Claude
-├── executar_app.bat               # ⚡ Atalho Windows
-└── LEIA_PRIMEIRO.txt              # 📌 Guia de entrada
+├── 📁 docs/                         # 📚 Documentação completa
+│   ├── ESTRUTURA_PROJETO.md         # 📋 Mapa do projeto
+│   ├── GUIA_USO.md                  # 📖 Como usar a aplicação
+│   ├── AUTENTICACAO.md              # 🔐 Sistema de autenticação
+│   ├── TROUBLESHOOTING.md           # 🆘 Resolução de problemas
+│   ├── CHANGELOG.md                 # 📅 Histórico de versões
+│   └── (outros documentos)
+│
+├── 📁 examples/                     # 📄 Exemplos de saída JSON
+│   ├── exemplo_pix.txt
+│   ├── exemplo_debito.txt
+│   ├── exemplo_credito.txt
+│   └── exemplo_multiplas.txt
+│
+├── 📄 README.md                     # 📌 Este arquivo
+├── 📄 CLAUDE.md                     # 👨‍💻 Instruções para Claude
+├── 📄 requirements.txt              # 📦 Dependências Python
+├── 📄 config.yaml                   # ⚙️ Autenticação (auto-gerado)
+├── 📄 credentials.json              # 🔐 Credenciais backup (auto-gerado)
+└── 📄 venv/                         # 🐍 Ambiente virtual (ignorado)
 ```
 
 ---
 
-## 📖 Documentação
+## 📖 Documentação Completa
 
-### 👤 Para Usuários Finais
-- **[GUIA_RAPIDO.md](docs/GUIA_RAPIDO.md)** ⚡ - Primeiros passos (5 minutos)
-- **[README.md](docs/README.md)** 📖 - Referência completa
-- **[EXEMPLOS.md](docs/EXEMPLOS.md)** 📄 - Exemplos práticos
+### 🚀 Primeiros Passos
+- **[docs/ESTRUTURA_PROJETO.md](docs/ESTRUTURA_PROJETO.md)** 📋 - **COMECE AQUI** Mapa do projeto
+- **[docs/GUIA_USO.md](docs/GUIA_USO.md)** 📖 - Como usar a aplicação
 
-### 👔 Para Gerentes/Executivos
-- **[RESUMO_EXECUTIVO.md](docs/RESUMO_EXECUTIVO.md)** 📊 - Métricas e ROI
+### 🔐 Autenticação & PostgreSQL
+- **[docs/AUTENTICACAO.md](docs/AUTENTICACAO.md)** 🔐 - Sistema de autenticação
+- **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** 🆘 - Resolução de problemas
 
-### 🛠️ Para Técnicos/Desenvolvedores
-- **[analise_jsons.md](docs/analise_jsons.md)** 🔍 - Estrutura JSON detalhada
-- **[guia_implementacao_n8n.md](docs/guia_implementacao_n8n.md)** 🤖 - n8n setup
-- **[CHECKLIST_IMPLEMENTACAO.md](docs/CHECKLIST_IMPLEMENTACAO.md)** ✅ - Roadmap técnico
+### 📋 Referência & Histórico
+- **[docs/CHANGELOG.md](docs/CHANGELOG.md)** 📅 - Histórico de versões
+- **[docs/EXEMPLOS.md](docs/EXEMPLOS.md)** 📄 - Exemplos práticos
+
+### 🛠️ Ferramentas & Scripts
+Use scripts em `tools/` para diagnóstico:
+```bash
+python tools/diagnostico_completo.py    # Diagnóstico completo
+python tools/verificar_usuarios_postgres.py  # Listar usuários
+python tools/debug_sync.py              # Testar sincronização
+```
 
 ---
 
