@@ -90,6 +90,7 @@ node_modules/
 
 # Keep only essential files
 !src/
+!tools/
 !img/
 !requirements.txt
 

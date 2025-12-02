@@ -28,18 +28,12 @@ COPY img/ ./img/
 # 3. Configuração do Streamlit
 COPY .streamlit/ ./.streamlit/
 
-# 4. Arquivos de autenticação e configuração
+# 4. Arquivos de autenticação e configuração (auto-gerados)
 COPY credentials.json .
 COPY config.yaml .
 
-# 5. Scripts de migração e sincronização de usuários
-COPY migrate_users_to_postgres.py .
-
-# 6. Scripts de verificação e diagnóstico
-COPY verificar_usuarios_postgres.py .
-COPY diagnostico_completo.py .
-COPY debug_sync.py .
-COPY debug_marcos.py .
+# 5. Scripts de diagnóstico e manutenção (reorganizados em tools/)
+COPY tools/ ./tools/
 
 # ========================================================================
 # Configuração final
