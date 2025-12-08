@@ -4,193 +4,347 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**AUTOMAÇÃO HYBRIS - GERADOR DE JSONs** is an automation system that generates JSON files for payment binding in the Hybris e-commerce platform. It eliminates manual JSON creation, reducing processing time from 5-10 minutes to <30 seconds and errors from ~10% to <1%.
+**AUTOMAÇÃO HYBRIS - GERADOR DE JSONs** is a web application that generates JSON files for payment binding in the Hybris e-commerce platform. Reduces processing time from 5-10 minutes to <30 seconds and errors from ~10% to <1%.
 
 **Technology Stack:**
-- Python 3.7+ (no external dependencies)
-- n8n for deployment and automation
-- Postman for API testing
-- Standard library only: `datetime`, `json`, `typing`, `uuid`
+- Python 3.7+
+- Streamlit (web interface)
+- PostgreSQL (user authentication source of truth)
+- streamlit-authenticator (authentication layer)
+- psycopg2 (PostgreSQL driver)
+- No other external dependencies for JSON generation logic
+
+**Deployment:**
+- Docker container via Coolify
+- Deployed on Hostinger VPS (Ubuntu 24.04)
+- IP: 72.61.58.41
+- PostgreSQL container: Port mapping 3000:5432
+
+---
 
 ## Project Structure
 
 ```
-├── hybris_json_generator.py      # Main generator class with all transaction types
-├── test_validator.py              # Automated test suite (6 test scenarios)
-├── n8n_workflow_hybris.json       # n8n workflow (importable)
-├── Postman_Collection_Hybris.json # API testing collection
-├── exemplo_gerado_pix.json        # Sample JSON output
-├── Documentation/
-│   ├── README.md                  # Complete technical documentation
-│   ├── RESUMO_EXECUTIVO.md        # Executive summary
-│   ├── GUIA_RAPIDO.md             # 5-minute quick start
-│   └── [4 more docs for different audiences]
-└── CLAUDE.md                       # This file
+├── src/                          # Main source code
+│   ├── app_streamlit.py          # Web app + authentication
+│   ├── hybris_json_generator.py  # JSON generation logic
+│   └── postgres_manager.py       # PostgreSQL operations
+├── tools/                        # Diagnostic and maintenance scripts
+│   ├── diagnostico_completo.py   # 3-layer auth diagnostic
+│   ├── debug_sync.py             # Manual sync test
+│   ├── verificar_usuarios_postgres.py
+│   └── migrate_users_to_postgres.py
+├── docs/                         # Consolidated documentation
+│   ├── ESTRUTURA_PROJETO.md      # Project map (START HERE)
+│   ├── AUTENTICACAO.md           # Auth system details
+│   ├── TROUBLESHOOTING.md        # Problem resolution
+│   └── CONEXAO_DBEAVER_COOLIFY_HOSTINGER.md
+├── examples/                     # Sample JSON outputs
+├── Dockerfile                    # Container definition
+├── .dockerignore                 # Docker ignore rules
+└── requirements.txt              # Python dependencies
 ```
+
+---
 
 ## Common Commands
 
+### Running Locally
+
 ```bash
-# Generate example JSONs and test locally
-python hybris_json_generator.py
+# Install dependencies
+pip install -r requirements.txt
 
-# Run comprehensive test suite (6 scenarios, all transaction types)
-python test_validator.py
+# Run Streamlit app
+streamlit run src/app_streamlit.py
 
-# These output examples and validation results to console
-# No build step or external dependencies needed
+# Access at http://localhost:8501
 ```
+
+### Docker Build
+
+```bash
+# Build image
+docker build -t hybris-generator .
+
+# Run container
+docker run -p 8501:8501 hybris-generator
+
+# IMPORTANT: After reorganization, ensure Dockerfile copies tools/
+# Line should be: COPY tools/ ./tools/
+```
+
+### Diagnostics (When Auth Issues Occur)
+
+```bash
+# Full 3-layer diagnostic (PostgreSQL → config.yaml → authenticator)
+python tools/diagnostico_completo.py
+
+# Verify PostgreSQL users
+python tools/verificar_usuarios_postgres.py
+
+# Test manual sync
+python tools/debug_sync.py
+```
+
+---
 
 ## Architecture Overview
 
-### Core Components
+### Authentication System (Critical - Most Recent Changes)
 
-**HybrisJSONGenerator** (hybris_json_generator.py)
-- Single-responsibility class handling JSON generation
-- Key methods:
-  - `create_base_order()` - Builds order structure
-  - `create_pix_transaction()` - PIX payment (product code 25)
-  - `create_debit_transaction()` - Debit card (product code 2000)
-  - `create_credit_transaction()` - Credit card with installments (product code 1000)
-  - `create_multiplas_transaction()` - Combines 2+ payment types
-  - `validate_transaction_totals()` - Ensures transaction sum equals order total
-  - `generate_json()` - Main entry point
+**Three-Layer Synchronization:**
 
-**HybrisJSONValidator** (test_validator.py)
-- Validates generated JSONs against Hybris requirements
-- 7 validation rules: structure, transactions, amounts, dates, product codes, required fields, JSON format
-- Used in automated tests
-
-### Key Architectural Patterns
-
-1. **Amount Handling:** All monetary values stored as centavos (integers). Convert Reals to centavos with `× 100` (e.g., R$ 150.50 = 15050)
-
-2. **Timestamp Format:** ISO 8601 UTC (e.g., "2024-10-24T15:30:00Z")
-
-3. **Transaction Types:**
-   - **PIX (25):** Instant payment, no card required
-   - **DEBITO (2000):** Debit card with brand and authorization
-   - **CREDITO (1000):** Credit card with 1-24 installment support
-   - **MULTIPLAS:** 2+ payment types combined in single order
-
-4. **JSON Structure:** Root object contains `id`, `items`, `price` (centavos), `number`, `status` ("PAID"), `created_at`, `updated_at`, and `transactions` array
-
-5. **Default Merchant Config:**
-   - Merchant Code: "0011112591759400"
-   - Terminal Number: "11111111"
-   - Application ID: "cielo.launcher"
-   - Status: Always "PAID"
-
-### Separation of Concerns
-
-- **Generation Logic:** HybrisJSONGenerator builds JSON structures
-- **Validation Logic:** HybrisJSONValidator ensures correctness
-- **Testing:** test_validator.py covers all transaction types
-- **Deployment:** n8n_workflow_hybris.json ready for production
-
-## Validation Rules
-
-The system enforces 7 validation rules:
-1. Transaction sum equals order total
-2. UUID format correctness
-3. Currency values in centavos (integers)
-4. ISO 8601 UTC timestamp format
-5. Correct product codes per transaction type
-6. All required fields present
-7. Valid JSON structure
-
-## n8n Integration
-
-**Webhook Endpoint:** POST `/webhook/hybris-json-generator`
-
-**Form Fields (Streamlit Interface):**
-- **amount**: Valor em Reais (convertido para centavos automaticamente)
-- **number**: Número da transação/terminal
-- **merchantName**: Pré-preenchido com "Fake callback Bruno - " (personalizável pelo usuário)
-- **authorization_code**: Código de autorização (opcional para PIX, obrigatório para DÉBITO/CRÉDITO)
-- **numberOfQuotas**: Número de parcelas (somente CRÉDITO, entre 1-24)
-
-**Campos Fixos (hardcoded no código):**
-- **card.mask**: Sempre "************XXXX" (não aparece no formulário)
-- **card.brand**: Sempre "XXXXXXXX" (não aparece no formulário)
-
-**Deployment:** Execute `streamlit run src/app_streamlit.py` or use `executar_app.bat` on Windows
-
-## Testing
-
-The test suite validates all 4 transaction types:
-
-```bash
-python test_validator.py
-# Runs 6 test scenarios covering:
-# - Single transactions (PIX, Debit, Credit at-sight)
-# - Credit installments (6x)
-# - Multiple payment combinations (2-way and 3-way splits)
-# - All validations pass (100% success rate)
+```
+PostgreSQL (Source of Truth)
+    ↓ [startup: load_credentials()]
+credentials.json (backup)
+    ↓ [startup: sync_credentials_to_config()]
+config.yaml (cache for authenticator)
+    ↓ [startup: load_authenticator()]
+streamlit-authenticator (validates login)
 ```
 
-## Adding New Transaction Types
+**Critical Functions in `src/app_streamlit.py`:**
 
-1. Create `create_[type]_transaction()` method in HybrisJSONGenerator
-2. Define product code and payment_fields structure
-3. Add case in `generate_json()` method's transaction type switch
-4. Add test scenario in test_validator.py
-5. Update documentation
-6. Run tests to verify
+1. **`load_credentials()`** (line 90)
+   - Loads users from PostgreSQL
+   - Fallback to credentials.json if DB unavailable
+   - Returns dict: `{"users": {...}, "version": "1.0"}`
 
-## Key Files to Know
+2. **`sync_credentials_to_config(credentials_data)`** (line 155)
+   - Converts PostgreSQL format → config.yaml format
+   - Creates/updates config.yaml
+   - **MUST be defined BEFORE being called** (Python execution order matters!)
 
-| File | Purpose |
-|------|---------|
-| hybris_json_generator.py | Main generator - all logic here |
-| test_validator.py | Testing & validation rules |
-| README.md | Complete technical reference |
-| analise_jsons.md | Deep dive into JSON structure |
-| guia_implementacao_n8n.md | Step-by-step n8n setup |
-| n8n_workflow_hybris.json | Ready-to-import workflow |
+3. **`load_authenticator()`** (line 28)
+   - Reads config.yaml
+   - Creates streamlit-authenticator object
+   - Returns authenticator instance
 
-## Important Notes
+**Startup Sequence** (lines 847-880 in app_streamlit.py):
+```python
+# PASSO 1: Load from PostgreSQL
+credentials = load_credentials()
 
-- **No external dependencies:** Uses only Python standard library for maximum portability
-- **Python 3.7+:** Compatible with all modern Python versions
-- **Type hints:** Already used throughout for code clarity
-- **Hardcoded defaults:** Merchant codes and terminal numbers are hardcoded but can be overridden via parameters
-- **Order number generation:** Based on timestamp (last 8 digits)
-- **UTC timestamps:** All dates in UTC with 'Z' suffix (ISO 8601)
+# PASSO 2: Sync to config.yaml
+sync_credentials_to_config(credentials)
 
-## Common Development Tasks
+# PASSO 3: Initialize authenticator
+authenticator = load_authenticator()
 
-**Running generator locally:**
-```bash
-python hybris_json_generator.py
-# Outputs 4 formatted JSON examples to console
+# PASSO 4: Render login widget
+authenticator.login()
 ```
 
-**Testing before deployment:**
+**PostgreSQL Connection** (src/postgres_manager.py):
+- Host: `u48cw44ccwg4sowco4044goc` (internal hostname, use IP 72.61.58.41 externally)
+- Port: 5432 (internally), mapped to 3000 on VPS host
+- Database: `postgres`
+- User: `postgres`
+- Password: `poMaf572450+@`
+- Table: `usuarios` with 4 users (marco, marcos.fernandes, kennedy.oliveira, alisson.galvao)
+
+### JSON Generation Logic
+
+**HybrisJSONGenerator** (src/hybris_json_generator.py):
+- **Amount Handling:** All monetary values in centavos (integers). R$ 150.50 = 15050
+- **Timestamp Format:** ISO 8601 UTC (e.g., "2024-10-24T15:30:00Z")
+- **Transaction Types:**
+  - PIX (product code 25)
+  - DEBITO (product code 2000)
+  - CREDITO (product code 1000) - supports 1-24 installments
+  - MULTIPLAS - combines 2+ payment types
+
+**Key Methods:**
+- `create_base_order()` - Base order structure
+- `create_pix_transaction()` - PIX payments
+- `create_debit_transaction()` - Debit cards
+- `create_credit_transaction()` - Credit cards with installments
+- `create_multiplas_transaction()` - Multiple payment combinations
+- `generate_json()` - Main entry point
+
+---
+
+## Critical Issues & Solutions
+
+### Issue: "User not authorized" (Only 1 user can login)
+
+**Root Cause:** PostgreSQL has 4 users but config.yaml has only 1 (sync failed)
+
+**Diagnostic:**
 ```bash
-python test_validator.py
-# Validates all 6 scenarios, shows pass/fail for each
+python tools/diagnostico_completo.py
+# Shows: PostgreSQL: 4 users, config.yaml: 1 user → NOT SYNCED
 ```
 
-**Deploying to n8n:**
-1. Create or edit Code Node in n8n workflow
-2. Copy-paste entire HybrisJSONGenerator class
-3. Map webhook inputs to function parameters
-4. Test with Postman collection (included)
-5. Activate workflow
+**Solution:** Function call order in Python matters!
+- `sync_credentials_to_config()` must be DEFINED (line 155) BEFORE being CALLED (line 866)
+- If called before definition → NameError
+- Fixed in commit 982173e by moving startup block after all function definitions
 
-**Modifying defaults:**
-- Edit constants in HybrisJSONGenerator methods
-- Update corresponding test cases
-- Run tests to verify changes
-- Update documentation
+### Issue: Dockerfile Fails After Reorganization
+
+**Root Cause:** Scripts moved from root to `tools/` but Dockerfile still references root
+
+**Solution:**
+```dockerfile
+# OLD (breaks):
+COPY diagnostico_completo.py .
+COPY debug_sync.py .
+
+# NEW (works):
+COPY tools/ ./tools/
+```
+
+Also update `.dockerignore`:
+```
+!tools/  # Must explicitly include
+```
+
+### Issue: DBeaver Cannot Connect to PostgreSQL
+
+**Root Cause:** Hostname `u48cw44ccwg4sowco4044goc` is internal to VPS
+
+**Solutions:**
+1. Use IP instead: `72.61.58.41`
+2. Use correct port mapping: Port `3000` (not 5432) due to Coolify mapping `3000:5432`
+3. Verify firewall: `sudo ufw allow 3000/tcp`
+
+See: `docs/CONEXAO_DBEAVER_COOLIFY_HOSTINGER.md`
+
+---
+
+## Important Patterns
+
+### Function Definition Order (Python Module-Level Code)
+
+**CRITICAL:** In `app_streamlit.py`, startup code executes at module level (not inside `if __name__ == "__main__"`).
+
+Functions MUST be defined BEFORE being called:
+
+```python
+# ✅ CORRECT ORDER:
+def sync_credentials_to_config(...):  # Line 155
+    pass
+
+# ... later in file ...
+
+sync_credentials_to_config(credentials)  # Line 866 - OK!
+
+# ❌ WRONG ORDER (causes NameError):
+sync_credentials_to_config(credentials)  # Line 169 - ERROR!
+
+def sync_credentials_to_config(...):  # Line 265 - Too late!
+    pass
+```
+
+### Logging for Visibility
+
+Use `sys.stdout.flush()` after prints in Docker/Coolify environments:
+
+```python
+print("[startup] PASSO 1: Carregando credenciais")
+sys.stdout.flush()  # CRITICAL for logs to appear immediately
+```
+
+### PostgreSQL as Source of Truth
+
+- PostgreSQL is authoritative for user credentials
+- credentials.json is backup only
+- config.yaml is auto-generated cache
+- NEVER edit config.yaml manually (will be overwritten)
+
+---
+
+## Debugging Authentication Issues
+
+### Step 1: Verify PostgreSQL
+
+```bash
+python tools/verificar_usuarios_postgres.py
+# Expected: 4 users listed
+```
+
+### Step 2: Test Sync
+
+```bash
+python tools/debug_sync.py
+# Expected: "Usuarios salvos no config.yaml: ['marco', 'marcos.fernandes', ...]"
+```
+
+### Step 3: Full Diagnostic
+
+```bash
+python tools/diagnostico_completo.py
+# Checks all 3 layers + compares
+```
+
+### Step 4: Check Startup Logs
+
+Look for in Coolify logs:
+```
+[startup] PASSO 1: Carregando credenciais
+[startup] Usuarios carregados: ['marco', 'marcos.fernandes', 'kennedy.oliveira', 'alisson.galvao']
+[startup] PASSO 2: Sincronizando para config.yaml
+[startup] OK: Sincronizacao concluida com sucesso
+[load_authenticator] OK: Authenticator inicializado com 4 usuarios
+```
+
+If missing any step → problem in that layer.
+
+---
+
+## Docker & Deployment
+
+### Dockerfile Structure
+
+1. Base: Python 3.11-slim
+2. Install system dependencies (ca-certificates)
+3. Copy requirements.txt → Install deps
+4. Copy src/, tools/, img/, .streamlit/
+5. Copy credentials.json, config.yaml (auto-generated)
+6. Expose 8501
+7. CMD: `streamlit run src/app_streamlit.py --server.port=8501 --server.address=0.0.0.0`
+
+### .dockerignore Rules
+
+- Ignore: docs/, tests/, venv/, *.md, *.log
+- Keep: !src/, !tools/, !img/, !requirements.txt, !credentials.json, !config.yaml
+
+### Coolify Deployment
+
+- Rebuild required (not just redeploy) after file reorganization
+- Check port mappings for PostgreSQL (3000:5432)
+- Verify environment variables if using (DB_HOST, DB_PORT, etc.)
+
+---
 
 ## Documentation Map
 
-- **README.md** - Complete API reference and examples (start here for details)
-- **RESUMO_EXECUTIVO.md** - Executive summary with metrics and benefits
-- **GUIA_RAPIDO.md** - 5-minute quick start guide
-- **analise_jsons.md** - Detailed JSON structure analysis
-- **guia_implementacao_n8n.md** - Full n8n integration guide
-- **CHECKLIST_IMPLEMENTACAO.md** - Implementation phases and tasks
-- **LEIA_PRIMEIRO.txt** - Entry point for first-time users
+**For New Users:**
+- `docs/ESTRUTURA_PROJETO.md` - Project structure overview
+- `docs/GUIA_USO.md` - How to use the app
+
+**For Developers:**
+- `docs/AUTENTICACAO.md` - Authentication system deep dive
+- `docs/TROUBLESHOOTING.md` - Common problems & solutions
+
+**For DevOps:**
+- `docs/CONEXAO_DBEAVER_COOLIFY_HOSTINGER.md` - Database connection
+- `docs/DOCKER_CONFIG_CORRECTIONS.md` - Docker setup issues
+
+**Historical (for reference):**
+- `docs/HISTORICO_*` - Investigation and fix documentation
+
+---
+
+## Key Constraints
+
+- Python 3.7+ required
+- PostgreSQL must be accessible (or app uses fallback to credentials.json)
+- Port 8501 for Streamlit
+- Port 3000 for PostgreSQL access (Coolify mapping)
+- All monetary values in centavos (multiply by 100)
+- Timestamps in UTC ISO 8601
+- config.yaml is auto-generated (don't edit manually)
