@@ -644,11 +644,14 @@ def normalize_amount_from_json(amount_value) -> float:
     """
     Normaliza o amount para Reais quando vem do JSON (centavos).
 
-    O Hybris sempre envia amount em centavos (inteiro).
-    O app trabalha com Reais (decimal).
+    O Hybris SEMPRE envia amount em centavos (inteiro).
+    Exemplos:
+    - 33 centavos = R$ 0,33
+    - 100 centavos = R$ 1,00
+    - 284050 centavos = R$ 2840,50
 
     Args:
-        amount_value: Valor em centavos (int) ou já em Reais (float)
+        amount_value: Valor em centavos (int) ou string
 
     Returns:
         Valor normalizado em Reais (float)
@@ -656,27 +659,17 @@ def normalize_amount_from_json(amount_value) -> float:
     if amount_value is None:
         return 0.0
 
-    # Se for inteiro > 100, provavelmente é centavos (ex: 284050 = R$ 2840.50)
-    # Se for inteiro < 100 ou float, provavelmente já é Reais
-    if isinstance(amount_value, int):
-        if amount_value > 100:
-            # Converter centavos para Reais
-            return amount_value / 100
-        else:
-            # Pequeno valor em centavos ou outra unidade
-            return float(amount_value)
-    elif isinstance(amount_value, float):
-        # Já é float, provavelmente em Reais
-        return amount_value
-    else:
-        # Tentar converter string
-        try:
-            val = float(amount_value)
-            if val > 100:
-                return val / 100
-            return val
-        except (ValueError, TypeError):
-            return 0.0
+    # Hybris sempre envia em centavos (inteiro)
+    # Converter para float primeiro se for string
+    try:
+        if isinstance(amount_value, str):
+            amount_value = float(amount_value)
+
+        # Converter centavos para Reais (dividir por 100)
+        # Isso funciona para qualquer valor: 33 → 0.33, 100 → 1.00, 284050 → 2840.50
+        return float(amount_value) / 100
+    except (ValueError, TypeError):
+        return 0.0
 
 
 def try_fix_incomplete_json(json_str: str) -> str:
@@ -1282,7 +1275,7 @@ if transaction_type:
                 pix_amount = st.number_input(
                     "amount *",
                     min_value=0.00,
-                    value=prefill_pix.get("amount", 0.0) / 100 if prefill_pix else 0.00,
+                    value=prefill_pix.get("amount", 0.0) if prefill_pix else 0.00,
                     step=0.01,
                     format="%.2f",
                     help="Valor da transação em Reais",
@@ -1419,7 +1412,7 @@ if transaction_type:
                 deb_amount = st.number_input(
                     "amount *",
                     min_value=0.00,
-                    value=prefill_deb.get("amount", 0.0) / 100 if prefill_deb else 0.00,
+                    value=prefill_deb.get("amount", 0.0) if prefill_deb else 0.00,
                     step=0.01,
                     format="%.2f",
                     key="deb_amount_input"
@@ -1566,7 +1559,7 @@ if transaction_type:
                 cred_amount = st.number_input(
                     "amount *",
                     min_value=0.00,
-                    value=prefill_cred.get("amount", 0.0) / 100 if prefill_cred else 0.00,
+                    value=prefill_cred.get("amount", 0.0) if prefill_cred else 0.00,
                     step=0.01,
                     format="%.2f",
                     key="cred_amount_input"
@@ -1794,7 +1787,7 @@ if transaction_type:
                     with col1:
                         default_amount = 0.00
                         if prefill_trans and prefill_trans.get("amount"):
-                            default_amount = max(0.00, prefill_trans.get("amount", 0.0) / 100)
+                            default_amount = max(0.00, prefill_trans.get("amount", 0.0))
 
                         trans_amount = st.number_input(
                             "amount *",
