@@ -541,24 +541,32 @@ def page_admin_users():
         if not users:
             st.warning("⚠️ Nenhum usuário cadastrado!")
         else:
+            # Usar selectbox fora do form para permitir atualização dinâmica
+            username_to_edit = st.selectbox(
+                "Selecione o usuário:",
+                list(users.keys()),
+                help="Escolha o usuário cujo nome de exibição será alterado",
+                key="edit_display_name_user_select"
+            )
+
+            # Recarregar credentials para pegar valor mais recente
+            fresh_credentials = load_credentials()
+            fresh_users = fresh_credentials.get("users", {})
+
+            # Mostrar nome atual
+            current_display_name = fresh_users.get(username_to_edit, {}).get("display_name", "")
+            current_merchant = get_merchant_name_for_user(username_to_edit, fresh_credentials)
+
+            st.info(f"📋 **MerchantName atual:** `{current_merchant}`")
+
+            # Form apenas para o botão de submit
             with st.form("form_edit_display_name"):
-                username_to_edit = st.selectbox(
-                    "Selecione o usuário:",
-                    list(users.keys()),
-                    help="Escolha o usuário cujo nome de exibição será alterado"
-                )
-
-                # Mostrar nome atual
-                current_display_name = users[username_to_edit].get("display_name", "")
-                current_merchant = get_merchant_name_for_user(username_to_edit, credentials)
-
-                st.info(f"📋 **MerchantName atual:** `{current_merchant}`")
-
                 new_display_name_edit = st.text_input(
                     "Novo nome de exibição:",
                     value=current_display_name,
                     placeholder="Ex: Kennedy, Alisson, Marcos",
-                    help="Deixe vazio para usar o primeiro nome do usuário automaticamente"
+                    help="Deixe vazio para usar o primeiro nome do usuário automaticamente",
+                    key=f"display_name_input_{username_to_edit}"
                 )
 
                 submitted = st.form_submit_button("✅ Salvar", use_container_width=True)
@@ -567,14 +575,21 @@ def page_admin_users():
                     # Atualizar display_name no PostgreSQL
                     db = PostgresManager()
                     if db.update_display_name(username_to_edit, new_display_name_edit.strip()):
-                        # Atualizar também no credentials local
-                        credentials["users"][username_to_edit]["display_name"] = new_display_name_edit.strip()
+                        # Limpar session_state do merchantName para forçar recarga
+                        if "global_merchant_name" in st.session_state:
+                            del st.session_state.global_merchant_name
+
+                        # Recarregar credentials
+                        updated_credentials = load_credentials()
+                        updated_users = updated_credentials.get("users", {})
+                        updated_users[username_to_edit]["display_name"] = new_display_name_edit.strip()
 
                         # Mostrar preview do novo merchantName
-                        new_merchant = get_merchant_name_for_user(username_to_edit, credentials)
+                        new_merchant = get_merchant_name_for_user(username_to_edit, updated_credentials)
 
                         st.success(f"✅ Nome de exibição de '{username_to_edit}' atualizado!")
                         st.info(f"📋 **Novo MerchantName:** `{new_merchant}`")
+                        st.info("🔄 **Faça logout e login novamente para ver o novo merchantName no gerador de JSON**")
                         st.balloons()
                     else:
                         st.error("❌ Erro ao atualizar no banco de dados!")
@@ -1226,19 +1241,37 @@ st.subheader("2️⃣ MerchantName (Obrigatório)")
 
 st.info("ℹ️ **Importante:** Este campo será usado em TODAS as transações. Personalize com o nome da pessoa e assunto do email de solicitação.")
 
-# Inicializar session_state para merchant_name global se não existir
+# Sempre recarregar merchantName do banco para pegar atualizações de display_name
 # Usar merchantName personalizado para o usuário logado
-if "global_merchant_name" not in st.session_state:
-    logged_username = st.session_state.get("username", "")
-    st.session_state.global_merchant_name = get_merchant_name_for_user(logged_username, credentials)
+logged_username = st.session_state.get("username", "")
+default_merchant_name = get_merchant_name_for_user(logged_username, credentials)
 
-global_merchant_name = st.text_input(
-    "MerchantName *",
-    value=st.session_state.global_merchant_name,
-    placeholder="Ex: Fake callback - Kennedy - RE: Transferência de 15/11/2024",
-    help="Personalize este campo com o nome da pessoa e o assunto da operação (já vem pré-preenchido com seu nome)",
-    key="global_merchant_name"
-)
+# Inicializar ou resetar se vazio
+if "global_merchant_name" not in st.session_state or not st.session_state.global_merchant_name:
+    st.session_state.global_merchant_name = default_merchant_name
+# Se o valor no session_state for apenas "Fake callback - " genérico, atualizar
+elif st.session_state.global_merchant_name.strip() == "Fake callback -":
+    st.session_state.global_merchant_name = default_merchant_name
+
+col1, col2 = st.columns([4, 1])
+
+with col1:
+    global_merchant_name = st.text_input(
+        "MerchantName *",
+        value=st.session_state.global_merchant_name,
+        placeholder=f"Ex: {default_merchant_name} - RE: Transferência de 15/11/2024",
+        help="Personalize este campo com o nome da pessoa e o assunto da operação (já vem pré-preenchido com seu nome)",
+        key="global_merchant_name"
+    )
+
+with col2:
+    st.write("")  # Espaçamento para alinhar com o input
+    st.write("")  # Mais espaçamento
+    if st.button("🔄 Resetar", help="Recarregar nome padrão do seu perfil", use_container_width=True):
+        # Forçar recarga do display_name do banco
+        fresh_creds = load_credentials()
+        st.session_state.global_merchant_name = get_merchant_name_for_user(logged_username, fresh_creds)
+        st.rerun()
 
 st.markdown("---")
 
