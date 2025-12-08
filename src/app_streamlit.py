@@ -87,6 +87,35 @@ def load_authenticator():
         st.error(f"Erro ao carregar authenticator: {str(e)}")
         st.stop()
 
+def get_merchant_name_for_user(username: str, credentials: dict) -> str:
+    """
+    Retorna o merchantName personalizado para o usuário logado.
+
+    Formato: "Fake callback - {DisplayName}"
+
+    Prioridade:
+    1. display_name (se preenchido) → "Fake callback - Kennedy"
+    2. Primeiro nome do username → "Fake callback - Marcos" (de marcos.fernandes)
+    3. Username inteiro → "Fake callback - Marco" (fallback)
+
+    Args:
+        username: Nome do usuário logado
+        credentials: Dict com dados dos usuários
+
+    Returns:
+        String formatada para merchantName
+    """
+    user_data = credentials.get("users", {}).get(username, {})
+
+    # Prioridade 1: display_name (se preenchido)
+    display_name = user_data.get("display_name", "").strip()
+    if display_name:
+        return f"Fake callback - {display_name}"
+
+    # Prioridade 2: Primeiro nome do username (ex: "marcos" de "marcos.fernandes")
+    first_name = username.split('.')[0].split('_')[0].capitalize()
+    return f"Fake callback - {first_name}"
+
 def load_credentials() -> dict:
     """
     Carrega credenciais APENAS do PostgreSQL (fonte de verdade).
@@ -341,7 +370,7 @@ def page_admin_users():
     st.sidebar.title("⚙️ Opções")
     tab_option = st.sidebar.radio(
         "Escolha uma opção:",
-        ["📋 Listar Usuários", "➕ Criar Usuário", "🔑 Alterar Senha", "❌ Remover Usuário"]
+        ["📋 Listar Usuários", "➕ Criar Usuário", "🔑 Alterar Senha", "✏️ Editar MerchantName", "❌ Remover Usuário"]
     )
 
     # TAB 1: LISTAR USUÁRIOS
@@ -399,6 +428,13 @@ def page_admin_users():
                     placeholder="Repita a senha",
                 )
 
+            # Campo display_name em linha separada para destaque
+            new_display_name = st.text_input(
+                "Nome para exibição no MerchantName",
+                placeholder="Ex: Kennedy, Alisson, Marcos",
+                help="Nome que aparecerá no 'Fake callback - [Nome]'. Se deixar vazio, usará o primeiro nome do usuário."
+            )
+
             submitted = st.form_submit_button("✅ Criar Usuário", use_container_width=True)
 
             if submitted:
@@ -422,13 +458,19 @@ def page_admin_users():
                         "name": new_username.title(),
                         "created_at": str(__import__('datetime').datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
                         "last_login": None,
-                        "enabled": True
+                        "enabled": True,
+                        "display_name": new_display_name.strip() if new_display_name else ""
                     }
 
                     if save_credentials(credentials):
                         # Registrar criação do usuário em log
-                        log_user_action("CREATE", new_username, f"email={new_email}")
+                        display_info = f", display_name={new_display_name}" if new_display_name else ""
+                        log_user_action("CREATE", new_username, f"email={new_email}{display_info}")
+
+                        # Mostrar merchantName que será usado
+                        merchant_preview = get_merchant_name_for_user(new_username, credentials)
                         st.success(f"✅ Usuário '{new_username}' criado com sucesso!")
+                        st.info(f"📋 **MerchantName deste usuário:** `{merchant_preview}`")
                         st.info(f"""
                         💡 **O usuário pode fazer login agora com:**
                         - Usuário: **{new_username}**
@@ -490,7 +532,54 @@ def page_admin_users():
                             st.success(f"✅ Senha de '{username_to_change}' alterada com sucesso!")
                             st.balloons()
 
-    # TAB 4: REMOVER USUÁRIO
+    # TAB 4: EDITAR MERCHANTNAME
+    elif tab_option == "✏️ Editar MerchantName":
+        st.subheader("✏️ Editar Nome de Exibição (MerchantName)")
+
+        st.info("💡 **Dica:** Este nome aparecerá no campo 'Fake callback - [Nome]' ao gerar JSONs.")
+
+        if not users:
+            st.warning("⚠️ Nenhum usuário cadastrado!")
+        else:
+            with st.form("form_edit_display_name"):
+                username_to_edit = st.selectbox(
+                    "Selecione o usuário:",
+                    list(users.keys()),
+                    help="Escolha o usuário cujo nome de exibição será alterado"
+                )
+
+                # Mostrar nome atual
+                current_display_name = users[username_to_edit].get("display_name", "")
+                current_merchant = get_merchant_name_for_user(username_to_edit, credentials)
+
+                st.info(f"📋 **MerchantName atual:** `{current_merchant}`")
+
+                new_display_name_edit = st.text_input(
+                    "Novo nome de exibição:",
+                    value=current_display_name,
+                    placeholder="Ex: Kennedy, Alisson, Marcos",
+                    help="Deixe vazio para usar o primeiro nome do usuário automaticamente"
+                )
+
+                submitted = st.form_submit_button("✅ Salvar", use_container_width=True)
+
+                if submitted:
+                    # Atualizar display_name no PostgreSQL
+                    db = PostgresManager()
+                    if db.update_display_name(username_to_edit, new_display_name_edit.strip()):
+                        # Atualizar também no credentials local
+                        credentials["users"][username_to_edit]["display_name"] = new_display_name_edit.strip()
+
+                        # Mostrar preview do novo merchantName
+                        new_merchant = get_merchant_name_for_user(username_to_edit, credentials)
+
+                        st.success(f"✅ Nome de exibição de '{username_to_edit}' atualizado!")
+                        st.info(f"📋 **Novo MerchantName:** `{new_merchant}`")
+                        st.balloons()
+                    else:
+                        st.error("❌ Erro ao atualizar no banco de dados!")
+
+    # TAB 5: REMOVER USUÁRIO
     elif tab_option == "❌ Remover Usuário":
         st.subheader("❌ Remover Usuário")
 
@@ -1138,14 +1227,16 @@ st.subheader("2️⃣ MerchantName (Obrigatório)")
 st.info("ℹ️ **Importante:** Este campo será usado em TODAS as transações. Personalize com o nome da pessoa e assunto do email de solicitação.")
 
 # Inicializar session_state para merchant_name global se não existir
+# Usar merchantName personalizado para o usuário logado
 if "global_merchant_name" not in st.session_state:
-    st.session_state.global_merchant_name = "Fake callback - "
+    logged_username = st.session_state.get("username", "")
+    st.session_state.global_merchant_name = get_merchant_name_for_user(logged_username, credentials)
 
 global_merchant_name = st.text_input(
     "MerchantName *",
     value=st.session_state.global_merchant_name,
-    placeholder="Ex: Fake callback - João Silva - RE: Transferência de 15/11/2024",
-    help="Personalize este campo com o nome da pessoa e o assunto da operação",
+    placeholder="Ex: Fake callback - Kennedy - RE: Transferência de 15/11/2024",
+    help="Personalize este campo com o nome da pessoa e o assunto da operação (já vem pré-preenchido com seu nome)",
     key="global_merchant_name"
 )
 

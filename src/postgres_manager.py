@@ -31,13 +31,14 @@ class PostgresManager:
             return None
 
     def ensure_table_exists(self):
-        """Cria tabela usuarios se não existir"""
+        """Cria tabela usuarios se não existir e adiciona coluna display_name se necessário"""
         try:
             conn = self.get_connection()
             if not conn:
                 return False
 
             with conn.cursor() as cur:
+                # Criar tabela se não existir
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS usuarios (
                         id SERIAL PRIMARY KEY,
@@ -55,6 +56,20 @@ class PostgresManager:
 
                     CREATE INDEX IF NOT EXISTS idx_usuarios_username ON usuarios(username);
                     CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email);
+                """)
+
+                # Adicionar coluna display_name se não existir (migration)
+                cur.execute("""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name='usuarios' AND column_name='display_name'
+                        ) THEN
+                            ALTER TABLE usuarios ADD COLUMN display_name VARCHAR(100);
+                            COMMENT ON COLUMN usuarios.display_name IS 'Nome de exibição para merchantName (ex: Kennedy, Alisson)';
+                        END IF;
+                    END $$;
                 """)
             conn.commit()
             conn.close()
@@ -76,14 +91,14 @@ class PostgresManager:
             with conn.cursor() as cur:
                 cur.execute("""
                     SELECT username, password_hash, password, email, name,
-                           enabled, created_at, last_login, last_modified
+                           enabled, created_at, last_login, last_modified, display_name
                     FROM usuarios
                     ORDER BY created_at
                 """)
                 users = {}
                 for row in cur.fetchall():
                     username, password_hash, password, email, name, enabled, \
-                    created_at, last_login, last_modified = row
+                    created_at, last_login, last_modified, display_name = row
 
                     users[username] = {
                         'password_hash': password_hash or '',
@@ -93,7 +108,8 @@ class PostgresManager:
                         'enabled': enabled,
                         'created_at': created_at.strftime('%Y-%m-%d %H:%M:%S') if created_at else None,
                         'last_login': last_login.strftime('%Y-%m-%d %H:%M:%S') if last_login else None,
-                        'last_modified': last_modified.strftime('%Y-%m-%d %H:%M:%S') if last_modified else None
+                        'last_modified': last_modified.strftime('%Y-%m-%d %H:%M:%S') if last_modified else None,
+                        'display_name': display_name or ''
                     }
             conn.close()
             # Retornar no formato de credentials.json
@@ -103,9 +119,12 @@ class PostgresManager:
             return {"users": {}}
 
     def save_user(self, username: str, email: str, name: str,
-                  password_hash: str, password: str, enabled: bool = True) -> bool:
+                  password_hash: str, password: str, enabled: bool = True,
+                  display_name: str = None) -> bool:
         """
         Salva/atualiza um usuário no PostgreSQL
+        Args:
+            display_name: Nome para exibição no merchantName (ex: "Kennedy", "Alisson")
         """
         try:
             conn = self.get_connection()
@@ -114,17 +133,18 @@ class PostgresManager:
 
             with conn.cursor() as cur:
                 sql_upsert = """
-                INSERT INTO usuarios (username, email, name, password_hash, password, enabled)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO usuarios (username, email, name, password_hash, password, enabled, display_name)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (username) DO UPDATE SET
                     email = EXCLUDED.email,
                     name = EXCLUDED.name,
                     password_hash = EXCLUDED.password_hash,
                     password = EXCLUDED.password,
                     enabled = EXCLUDED.enabled,
+                    display_name = EXCLUDED.display_name,
                     updated_at = CURRENT_TIMESTAMP
                 """
-                cur.execute(sql_upsert, (username, email, name, password_hash, password, enabled))
+                cur.execute(sql_upsert, (username, email, name, password_hash, password, enabled, display_name))
             conn.commit()
             conn.close()
             return True
@@ -202,3 +222,29 @@ class PostgresManager:
             return result[0] if result else 0
         except psycopg2.Error:
             return 0
+
+    def update_display_name(self, username: str, display_name: str) -> bool:
+        """
+        Atualiza apenas o display_name de um usuário
+        Args:
+            username: Nome de usuário
+            display_name: Nome para exibição (ex: "Kennedy", "Alisson")
+        """
+        try:
+            conn = self.get_connection()
+            if not conn:
+                return False
+
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE usuarios
+                    SET display_name = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE username = %s
+                """, (display_name, username))
+            conn.commit()
+            conn.close()
+            return True
+        except psycopg2.Error as e:
+            print(f"⚠️ Erro ao atualizar display_name: {e}")
+            return False
