@@ -91,30 +91,30 @@ def get_merchant_name_for_user(username: str, credentials: dict) -> str:
     """
     Retorna o merchantName personalizado para o usuário logado.
 
-    Formato: "Fake callback - {DisplayName}"
+    Formato: "Fake callback - {DisplayName} - "
 
     Prioridade:
-    1. display_name (se preenchido) → "Fake callback - Kennedy"
-    2. Primeiro nome do username → "Fake callback - Marcos" (de marcos.fernandes)
-    3. Username inteiro → "Fake callback - Marco" (fallback)
+    1. display_name (se preenchido) → "Fake callback - Kennedy - "
+    2. Primeiro nome do username → "Fake callback - Marcos - " (de marcos.fernandes)
+    3. Username inteiro → "Fake callback - Marco - " (fallback)
 
     Args:
         username: Nome do usuário logado
         credentials: Dict com dados dos usuários
 
     Returns:
-        String formatada para merchantName
+        String formatada para merchantName (com " - " no final)
     """
     user_data = credentials.get("users", {}).get(username, {})
 
     # Prioridade 1: display_name (se preenchido)
     display_name = user_data.get("display_name", "").strip()
     if display_name:
-        return f"Fake callback - {display_name}"
+        return f"Fake callback - {display_name} - "
 
     # Prioridade 2: Primeiro nome do username (ex: "marcos" de "marcos.fernandes")
     first_name = username.split('.')[0].split('_')[0].capitalize()
-    return f"Fake callback - {first_name}"
+    return f"Fake callback - {first_name} - "
 
 def load_credentials() -> dict:
     """
