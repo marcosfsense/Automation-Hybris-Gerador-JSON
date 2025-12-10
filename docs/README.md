@@ -1,20 +1,6 @@
-# 📚 Documentação - Índice Completo
+# Documentação - Gerador JSON Hybris
 
-**Bem-vindo à documentação do Gerador JSON Hybris!**
-
-Escolha o guia que melhor se adequa ao seu caso:
-
----
-
-## 🚀 Primeiros Passos
-
-### Para Usuários Novos
-1. **[ESTRUTURA_PROJETO.md](ESTRUTURA_PROJETO.md)** - Entenda a organização dos arquivos
-2. **[GUIA_USO.md](GUIA_USO.md)** - Como usar a aplicação
-
-### Para Desenvolvedores
-1. **[AUTENTICACAO.md](AUTENTICACAO.md)** - Como funciona o sistema de login
-2. **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Resolvendo problemas
+**Bem-vindo!** Esta documentação cobre tudo que você precisa para usar e entender o projeto.
 
 ---
 
@@ -22,102 +8,36 @@ Escolha o guia que melhor se adequa ao seu caso:
 
 | Documento | Descrição |
 |-----------|-----------|
-| **[ESTRUTURA_PROJETO.md](ESTRUTURA_PROJETO.md)** | 📋 Mapa completo do projeto - **COMECE AQUI** |
-| **[GUIA_USO.md](GUIA_USO.md)** | 📖 Como usar a aplicação passo-a-passo |
-| **[AUTENTICACAO.md](AUTENTICACAO.md)** | 🔐 Sistema de autenticação PostgreSQL + config.yaml |
-| **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** | 🆘 Resolução de problemas comuns |
-
----
-
-## 📚 Documentação de Referência
-
-| Documento | Descrição |
-|-----------|-----------|
-| **[GUIA_GERENCIAR_USUARIOS.md](GUIA_GERENCIAR_USUARIOS.md)** | 👥 Adicionar/remover/editar usuários |
-| **[USUARIOS_E_POSTGRESQL.md](USUARIOS_E_POSTGRESQL.md)** | 🗄️ Estrutura de dados no PostgreSQL |
+| **[GUIA.md](GUIA.md)** | 📘 Como usar a aplicação (COMECE AQUI) |
+| **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** | 🆘 Resolver problemas de login |
 | **[EXEMPLOS.md](EXEMPLOS.md)** | 📄 Exemplos de JSONs gerados |
-| **[CHANGELOG.md](CHANGELOG.md)** | 📅 Histórico de versões e mudanças |
 
 ---
 
-## 🔧 Documentação Técnica Avançada
+## 📁 Outros Recursos
 
-| Documento | Descrição |
-|-----------|-----------|
-| **[FLUXO_AUTENTICACAO_v4.md](FLUXO_AUTENTICACAO_v4.md)** | 🔐 Fluxo detalhado de autenticação |
+**Exemplos de JSON prontos:**
+- Veja a pasta [`examples/`](../examples/) com JSONs completos para cada tipo de transação
 
----
-
-## 📊 Histórico & Registros
-
-Documentos do processo de desenvolvimento (para referência):
-
-| Documento | Descrição |
-|-----------|-----------|
-| **[HISTORICO_INVESTIGACAO_DESCOBERTA.md](HISTORICO_INVESTIGACAO_DESCOBERTA.md)** | 📝 Como descobrimos a causa raiz |
-| **[HISTORICO_DIAGNOSTICO.md](HISTORICO_DIAGNOSTICO.md)** | 🔍 Análise do diagnóstico completo |
-| **[HISTORICO_FIX_ORDEM_FUNCOES.md](HISTORICO_FIX_ORDEM_FUNCOES.md)** | ⚡ Fix crítico da ordem de funções |
-| **[HISTORICO_SUCESSO_FINAL.md](HISTORICO_SUCESSO_FINAL.md)** | 🎉 Documentação do sucesso final |
-| **[PROXIMAS_ACOES.md](PROXIMAS_ACOES.md)** | 📋 Próximos passos (histórico) |
-| **[PROXIMAS_ACOES_DEPLOY.md](PROXIMAS_ACOES_DEPLOY.md)** | 🚀 Instruções de deploy (histórico) |
+**Documentação do código:**
+- Veja [`CLAUDE.md`](../CLAUDE.md) para instruções de desenvolvimento
 
 ---
 
-## 🛠️ Ferramentas (Usar via linha de comando)
+## 🚀 Quick Start
 
-```bash
-# Diagnóstico completo
-python tools/diagnostico_completo.py
-
-# Verificar usuários PostgreSQL
-python tools/verificar_usuarios_postgres.py
-
-# Testar sincronização
-python tools/debug_sync.py
-
-# Migrar usuários para PostgreSQL
-python tools/migrate_users_to_postgres.py
-
-# Debug específico
-python tools/debug_marcos.py
-```
+1. **Acesse:** https://gerajson.sensebike.com.br
+2. **Faça login** com suas credenciais
+3. **Leia:** [GUIA.md](GUIA.md) para aprender a usar
 
 ---
 
-## ⚡ Quick Links
+## 🆘 Precisa de Ajuda?
 
-- **[Voltar ao README principal](../README.md)** - Documentação da aplicação
-- **[Ver Changelog](CHANGELOG.md)** - Histórico de atualizações
-- **[Troubleshooting](TROUBLESHOOTING.md)** - Resolver problemas
-
----
-
-## 🎯 Por Caso de Uso
-
-### "Não consigo fazer login"
-→ Veja **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)**
-
-### "Quero adicionar um novo usuário"
-→ Veja **[GUIA_GERENCIAR_USUARIOS.md](GUIA_GERENCIAR_USUARIOS.md)**
-
-### "Como o sistema de autenticação funciona?"
-→ Veja **[AUTENTICACAO.md](AUTENTICACAO.md)**
-
-### "Onde estão os arquivos do projeto?"
-→ Veja **[ESTRUTURA_PROJETO.md](ESTRUTURA_PROJETO.md)**
-
-### "Como usar a aplicação?"
-→ Veja **[GUIA_USO.md](GUIA_USO.md)**
+- **Não consegue fazer login?** → [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+- **Não sabe como usar?** → [GUIA.md](GUIA.md)
+- **Quer ver exemplos?** → [EXEMPLOS.md](EXEMPLOS.md) ou pasta [`examples/`](../examples/)
 
 ---
 
-## 📞 Precisa de Ajuda?
-
-1. **Primeiro**: Leia [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-2. **Depois**: Rode `python tools/diagnostico_completo.py`
-3. **Ainda tem dúvida?**: Consulte [ESTRUTURA_PROJETO.md](ESTRUTURA_PROJETO.md)
-
----
-
-**Última atualização**: 2025-12-02
-**Status**: ✅ Documentação Completa
+**Última atualização:** 2025-12-09
