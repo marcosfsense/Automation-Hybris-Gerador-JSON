@@ -1049,12 +1049,14 @@ st.markdown("""
         color: #0c5460;                 # Texto azul escuro
     }
 
-    # Scroll horizontal para abas (útil quando há muitas transações)
+    # Scroll horizontal para abas - v2.0 (útil quando há muitas transações)
     .stTabs [data-baseweb="tab-list"] {
-        overflow-x: auto;               # Habilita scroll horizontal
+        overflow-x: auto !important;    # Habilita scroll horizontal (force override)
         overflow-y: hidden;             # Desabilita scroll vertical
         white-space: nowrap;            # Impede quebra de linha
         -webkit-overflow-scrolling: touch;  # Scroll suave no mobile
+        display: flex;                  # Force flex layout
+        flex-wrap: nowrap;              # No wrapping
     }
 
     # Esconder scrollbar mas manter funcionalidade (opcional)
