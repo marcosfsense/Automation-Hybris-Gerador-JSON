@@ -1691,9 +1691,9 @@ if transaction_type:
         num_transactions = st.number_input(
             "Quantas transações?",
             min_value=2,
-            max_value=10,
+            max_value=20,
             value=default_num_trans,
-            help="Ajuste se necessário. Valor pré-definido com base no JSON colado." if prefill_data else "Entre 2 e 10 transações"
+            help="Ajuste se necessário. Valor pré-definido com base no JSON colado." if prefill_data else "Entre 2 e 20 transações"
         )
 
         # Usar session_state para armazenar dados das transações

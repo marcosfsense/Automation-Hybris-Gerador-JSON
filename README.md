@@ -118,7 +118,7 @@ Sistema web desenvolvido em **Python puro** (sem dependências externas) para au
 - **PIX** 🔷 Pagamento instantâneo
 - **DÉBITO** 💳 Cartão de débito à vista
 - **CRÉDITO** 💰 Cartão de crédito (1-24 parcelas)
-- **MÚLTIPLAS** 🔀 Combinação de 2+ pagamentos na mesma ordem (até 10 transações)
+- **MÚLTIPLAS** 🔀 Combinação de 2+ pagamentos na mesma ordem (até 20 transações)
 
 ### ⚙️ Funcionalidades:
 - ✅ Interface web moderna e intuitiva
@@ -153,12 +153,10 @@ AUTOMAÇÃO-HYBRIS/
 │   └── migrate_users_to_postgres.py  # 📤 Migrar usuários
 │
 ├── 📁 docs/                         # 📚 Documentação completa
-│   ├── ESTRUTURA_PROJETO.md         # 📋 Mapa do projeto
-│   ├── GUIA_USO.md                  # 📖 Como usar a aplicação
-│   ├── AUTENTICACAO.md              # 🔐 Sistema de autenticação
+│   ├── README.md                    # 📋 Índice da documentação
+│   ├── GUIA.md                      # 📖 Guia completo de uso
 │   ├── TROUBLESHOOTING.md           # 🆘 Resolução de problemas
-│   ├── CHANGELOG.md                 # 📅 Histórico de versões
-│   └── (outros documentos)
+│   └── EXEMPLOS.md                  # 📄 Exemplos de JSONs
 │
 ├── 📁 examples/                     # 📄 Exemplos de saída JSON
 │   ├── exemplo_pix.txt
@@ -178,25 +176,20 @@ AUTOMAÇÃO-HYBRIS/
 
 ## 📖 Documentação Completa
 
-### 🚀 Primeiros Passos
-- **[docs/ESTRUTURA_PROJETO.md](docs/ESTRUTURA_PROJETO.md)** 📋 - **COMECE AQUI** Mapa do projeto
-- **[docs/GUIA_USO.md](docs/GUIA_USO.md)** 📖 - Como usar a aplicação
-
-### 🔐 Autenticação & PostgreSQL
-- **[docs/AUTENTICACAO.md](docs/AUTENTICACAO.md)** 🔐 - Sistema de autenticação
-- **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** 🆘 - Resolução de problemas
-
-### 📋 Referência & Histórico
-- **[docs/CHANGELOG.md](docs/CHANGELOG.md)** 📅 - Histórico de versões
-- **[docs/EXEMPLOS.md](docs/EXEMPLOS.md)** 📄 - Exemplos práticos
+### 📚 Documentação Principal
+- **[docs/GUIA.md](docs/GUIA.md)** 📖 - **COMECE AQUI** - Guia completo de uso
+- **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** 🆘 - Resolver problemas de login
+- **[docs/EXEMPLOS.md](docs/EXEMPLOS.md)** 📄 - Exemplos práticos de JSONs
 
 ### 🛠️ Ferramentas & Scripts
 Use scripts em `tools/` para diagnóstico:
 ```bash
-python tools/diagnostico_completo.py    # Diagnóstico completo
-python tools/verificar_usuarios_postgres.py  # Listar usuários
-python tools/debug_sync.py              # Testar sincronização
+python tools/diagnostico_completo.py           # Diagnóstico completo
+python tools/verificar_usuarios_postgres.py   # Listar usuários
+python tools/debug_sync.py                     # Testar sincronização
 ```
+
+> **💡 Dica:** Para desenvolvedores, veja também [CLAUDE.md](CLAUDE.md) com instruções técnicas do projeto.
 
 ---
 
@@ -240,7 +233,7 @@ Clique em **"Gerar JSON"** e pronto!
 | **PIX** | Valor, Number, Comerciante | - | `{"valor": 15050, "number": "001"}` |
 | **DÉBITO** | Valor, Number, Comerciante, Auth | - | `{"valor": 10000, "number": "001", "auth": "ABC123"}` |
 | **CRÉDITO** | Valor, Number, Comerciante, Parcelas, Auth | - | `{"valor": 24000, "number": "001", "parcelas": 12, "auth": "XYZ789"}` |
-| **MÚLTIPLAS** | Combinação de 2-10 tipos | Pré-preenchimento (opcional) | PIX + CRÉDITO + DÉBITO juntos |
+| **MÚLTIPLAS** | Combinação de 2-20 tipos | Pré-preenchimento (opcional) | PIX + CRÉDITO + DÉBITO juntos |
 
 ### 📝 Múltiplas - Forma de Entrada:
 - **Opção A (Manual):** Responda "Não" → Preencha cada transação com o formulário
@@ -261,7 +254,7 @@ Clique em **"Gerar JSON"** e pronto!
 - ✅ **Validação inteligente**: Diferentes validações por tipo de entrada
 
 ### Versão 2.1 (Novembro 2025)
-- ✅ **Suporte a até 10 transações múltiplas** (antes: 5)
+- ✅ **Suporte a até 20 transações múltiplas** (antes: 10)
 - ✅ **Interface condicional melhorada**: JSON vs Formulário (escolha clara)
 - ✅ **Pergunta por aba**: "Já existe a transação?" em MÚLTIPLAS
 - ✅ **Flexibilidade total**: Misture JSON pré-preenchido com preenchimento manual
@@ -407,13 +400,10 @@ Cobre:
 > R: Se está no Windows, duplo clique em `executar_app.bat`. Se em Mac/Linux, siga o [Início Rápido](#-início-rápido).
 
 **P: Qual é a diferença entre PIX, DÉBITO e CRÉDITO?**
-> R: PIX é instantâneo (sem parcelas), DÉBITO é à vista, CRÉDITO permite até 24 parcelas. Veja [Guia Rápido](docs/GUIA_RAPIDO.md).
+> R: PIX é instantâneo (sem parcelas), DÉBITO é à vista, CRÉDITO permite até 24 parcelas. Veja [docs/GUIA.md](docs/GUIA.md).
 
 **P: Posso usar sem Python instalado?**
 > R: Não. Python 3.7+ é obrigatório. [Instale aqui](https://www.python.org/downloads/).
-
-**P: Como integro com n8n?**
-> R: Temos um workflow pronto! Veja [guia_implementacao_n8n.md](docs/guia_implementacao_n8n.md).
 
 **P: Posso usar no Postman?**
 > R: Sim! Incluso `Postman_Collection_Hybris.json` com exemplos.
@@ -512,7 +502,7 @@ executar_app.bat
 ```
 
 ### 📖 Primeiros passos (5 min)
-Leia [GUIA_RAPIDO.md](docs/GUIA_RAPIDO.md)
+Leia [GUIA.md](docs/GUIA.md)
 
 ### 🤔 Dúvidas?
 Veja [FAQ](#-perguntas-frequentes) acima
