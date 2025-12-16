@@ -1049,91 +1049,60 @@ st.markdown("""
         color: #0c5460;                 # Texto azul escuro
     }
 
-    /* Scroll horizontal para abas - v4.0 - Força scrollbar sempre visível */
+    /* Scroll horizontal para abas - v5.0 - Abordagem simplificada */
 
-    /* Container principal das tabs - garantir que permite scroll */
+    /* Container principal das tabs */
     .stTabs,
     [data-testid="stTabs"] {
         width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+    }
+
+    /* Tab list - forçar layout horizontal sem quebra */
+    .stTabs [data-baseweb="tab-list"],
+    [data-testid="stTabs"] [role="tablist"],
+    div[role="tablist"] {
+        display: inline-flex !important;
+        flex-wrap: nowrap !important;
+        white-space: nowrap !important;
+        min-width: min-content !important;
+        width: auto !important;
         overflow: visible !important;
     }
 
-    /* Seletor para Streamlit versões antigas */
-    .stTabs [data-baseweb="tab-list"] {
-        overflow-x: scroll !important;
-        overflow-y: hidden !important;
-        white-space: nowrap !important;
-        display: flex !important;
-        flex-wrap: nowrap !important;
-        -webkit-overflow-scrolling: touch;
-        width: 100% !important;
-        max-width: 100% !important;
-        padding-bottom: 15px !important;
-    }
-
-    /* Seletor alternativo para Streamlit versões novas */
-    [data-testid="stTabs"] [role="tablist"] {
-        overflow-x: scroll !important;
-        overflow-y: hidden !important;
-        white-space: nowrap !important;
-        display: flex !important;
-        flex-wrap: nowrap !important;
-        -webkit-overflow-scrolling: touch;
-        width: 100% !important;
-        max-width: 100% !important;
-        padding-bottom: 15px !important;
-    }
-
-    /* Seletor genérico - fallback */
-    div[role="tablist"] {
-        overflow-x: scroll !important;
-        overflow-y: hidden !important;
-        white-space: nowrap !important;
-        display: flex !important;
-        flex-wrap: nowrap !important;
-        -webkit-overflow-scrolling: touch;
-        width: 100% !important;
-        max-width: 100% !important;
-        padding-bottom: 15px !important;
-    }
-
-    /* Scrollbar styling - múltiplos seletores - SEMPRE VISÍVEL */
-    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar,
-    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar,
-    div[role="tablist"]::-webkit-scrollbar {
-        height: 12px !important;
-        display: block !important;
-        -webkit-appearance: none !important;
-    }
-
-    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-track,
-    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-track,
-    div[role="tablist"]::-webkit-scrollbar-track {
-        background: #e0e0e0 !important;
-        border-radius: 6px !important;
-        margin: 0 10px !important;
-    }
-
-    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb,
-    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-thumb,
-    div[role="tablist"]::-webkit-scrollbar-thumb {
-        background: #1f77b4 !important;
-        border-radius: 6px !important;
-        border: 2px solid #e0e0e0 !important;
-    }
-
-    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb:hover,
-    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-thumb:hover,
-    div[role="tablist"]::-webkit-scrollbar-thumb:hover {
-        background: #1565c0 !important;
-    }
-
-    /* Garantir que cada aba tenha largura mínima - múltiplos seletores */
+    /* Cada tab individual - compacta mas legível */
     .stTabs [data-baseweb="tab"],
     [data-testid="stTabs"] [role="tab"],
     div[role="tab"] {
-        min-width: 120px !important;
+        min-width: 80px !important;
+        max-width: 150px !important;
         flex-shrink: 0 !important;
+        padding: 8px 12px !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* Scrollbar styling para o container principal */
+    .stTabs::-webkit-scrollbar,
+    [data-testid="stTabs"]::-webkit-scrollbar {
+        height: 10px !important;
+    }
+
+    .stTabs::-webkit-scrollbar-track,
+    [data-testid="stTabs"]::-webkit-scrollbar-track {
+        background: #f0f0f0 !important;
+        border-radius: 5px !important;
+    }
+
+    .stTabs::-webkit-scrollbar-thumb,
+    [data-testid="stTabs"]::-webkit-scrollbar-thumb {
+        background: #1f77b4 !important;
+        border-radius: 5px !important;
+    }
+
+    .stTabs::-webkit-scrollbar-thumb:hover,
+    [data-testid="stTabs"]::-webkit-scrollbar-thumb:hover {
+        background: #1565c0 !important;
     }
 </style>
 """, unsafe_allow_html=True)  # unsafe_allow_html=True permite usar HTML/CSS puro
