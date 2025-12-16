@@ -1048,6 +1048,38 @@ st.markdown("""
         border-radius: 0.25rem;
         color: #0c5460;                 # Texto azul escuro
     }
+
+    # Scroll horizontal para abas (útil quando há muitas transações)
+    .stTabs [data-baseweb="tab-list"] {
+        overflow-x: auto;               # Habilita scroll horizontal
+        overflow-y: hidden;             # Desabilita scroll vertical
+        white-space: nowrap;            # Impede quebra de linha
+        -webkit-overflow-scrolling: touch;  # Scroll suave no mobile
+    }
+
+    # Esconder scrollbar mas manter funcionalidade (opcional)
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
+        height: 8px;                    # Altura da scrollbar
+    }
+
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-track {
+        background: #2b2b2b;            # Cor do fundo da scrollbar
+    }
+
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb {
+        background: #555;               # Cor da barra de scroll
+        border-radius: 4px;             # Cantos arredondados
+    }
+
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb:hover {
+        background: #777;               # Cor ao passar o mouse
+    }
+
+    # Garantir que cada aba tenha largura mínima
+    .stTabs [data-baseweb="tab"] {
+        min-width: 120px;               # Largura mínima de cada aba
+        flex-shrink: 0;                 # Impede que abas encolham
+    }
 </style>
 """, unsafe_allow_html=True)  # unsafe_allow_html=True permite usar HTML/CSS puro
 
