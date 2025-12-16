@@ -1049,65 +1049,83 @@ st.markdown("""
         color: #0c5460;                 # Texto azul escuro
     }
 
-    /* Scroll horizontal para abas - v3.0 - Múltiplos seletores */
+    /* Scroll horizontal para abas - v4.0 - Força scrollbar sempre visível */
+
+    /* Container principal das tabs - garantir que permite scroll */
+    .stTabs,
+    [data-testid="stTabs"] {
+        width: 100% !important;
+        overflow: visible !important;
+    }
+
     /* Seletor para Streamlit versões antigas */
     .stTabs [data-baseweb="tab-list"] {
-        overflow-x: auto !important;
+        overflow-x: scroll !important;
         overflow-y: hidden !important;
         white-space: nowrap !important;
         display: flex !important;
         flex-wrap: nowrap !important;
         -webkit-overflow-scrolling: touch;
+        width: 100% !important;
         max-width: 100% !important;
+        padding-bottom: 15px !important;
     }
 
     /* Seletor alternativo para Streamlit versões novas */
     [data-testid="stTabs"] [role="tablist"] {
-        overflow-x: auto !important;
+        overflow-x: scroll !important;
         overflow-y: hidden !important;
         white-space: nowrap !important;
         display: flex !important;
         flex-wrap: nowrap !important;
         -webkit-overflow-scrolling: touch;
+        width: 100% !important;
         max-width: 100% !important;
+        padding-bottom: 15px !important;
     }
 
     /* Seletor genérico - fallback */
     div[role="tablist"] {
-        overflow-x: auto !important;
+        overflow-x: scroll !important;
         overflow-y: hidden !important;
         white-space: nowrap !important;
         display: flex !important;
         flex-wrap: nowrap !important;
         -webkit-overflow-scrolling: touch;
+        width: 100% !important;
         max-width: 100% !important;
+        padding-bottom: 15px !important;
     }
 
-    /* Scrollbar styling - múltiplos seletores */
+    /* Scrollbar styling - múltiplos seletores - SEMPRE VISÍVEL */
     .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar,
     [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar,
     div[role="tablist"]::-webkit-scrollbar {
-        height: 10px !important;
+        height: 12px !important;
         display: block !important;
+        -webkit-appearance: none !important;
     }
 
     .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-track,
     [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-track,
     div[role="tablist"]::-webkit-scrollbar-track {
-        background: #2b2b2b !important;
+        background: #e0e0e0 !important;
+        border-radius: 6px !important;
+        margin: 0 10px !important;
     }
 
     .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb,
     [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-thumb,
     div[role="tablist"]::-webkit-scrollbar-thumb {
-        background: #888 !important;
-        border-radius: 5px !important;
+        background: #1f77b4 !important;
+        border-radius: 6px !important;
+        border: 2px solid #e0e0e0 !important;
     }
 
     .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb:hover,
     [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-thumb:hover,
     div[role="tablist"]::-webkit-scrollbar-thumb:hover {
-        background: #aaa !important;
+        background: #1565c0 !important;
     }
 
     /* Garantir que cada aba tenha largura mínima - múltiplos seletores */
