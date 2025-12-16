@@ -1049,26 +1049,59 @@ st.markdown("""
         color: #0c5460;                 # Texto azul escuro
     }
 
-    /* Scroll horizontal para abas - v5.0 - Abordagem simplificada */
+    /* Scroll horizontal para abas - v6.0 - Força scroll no tab-list */
 
-    /* Container principal das tabs */
+    /* Remover overflow hidden de TODOS os containers pais */
+    .main .block-container,
     .stTabs,
-    [data-testid="stTabs"] {
-        width: 100% !important;
-        overflow-x: auto !important;
+    [data-testid="stTabs"],
+    .stTabs > div,
+    [data-testid="stTabs"] > div {
+        overflow-x: visible !important;
         overflow-y: visible !important;
     }
 
-    /* Tab list - forçar layout horizontal sem quebra */
+    /* Tab list - AQUI fica o scroll */
     .stTabs [data-baseweb="tab-list"],
     [data-testid="stTabs"] [role="tablist"],
     div[role="tablist"] {
-        display: inline-flex !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        display: flex !important;
         flex-wrap: nowrap !important;
         white-space: nowrap !important;
-        min-width: min-content !important;
-        width: auto !important;
-        overflow: visible !important;
+        width: 100% !important;
+        /* Firefox */
+        scrollbar-width: thin !important;
+        scrollbar-color: #1f77b4 #f0f0f0 !important;
+    }
+
+    /* Scrollbar styling (Webkit - Chrome/Edge/Safari) */
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar,
+    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar,
+    div[role="tablist"]::-webkit-scrollbar {
+        height: 10px !important;
+        display: block !important;
+    }
+
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-track,
+    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-track,
+    div[role="tablist"]::-webkit-scrollbar-track {
+        background: #f0f0f0 !important;
+        border-radius: 5px !important;
+    }
+
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb,
+    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-thumb,
+    div[role="tablist"]::-webkit-scrollbar-thumb {
+        background: #1f77b4 !important;
+        border-radius: 5px !important;
+    }
+
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb:hover,
+    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-thumb:hover,
+    div[role="tablist"]::-webkit-scrollbar-thumb:hover {
+        background: #1565c0 !important;
     }
 
     /* Cada tab individual - compacta mas legível */
@@ -1081,30 +1114,45 @@ st.markdown("""
         padding: 8px 12px !important;
         font-size: 0.9rem !important;
     }
-
-    /* Scrollbar styling para o container principal */
-    .stTabs::-webkit-scrollbar,
-    [data-testid="stTabs"]::-webkit-scrollbar {
-        height: 10px !important;
-    }
-
-    .stTabs::-webkit-scrollbar-track,
-    [data-testid="stTabs"]::-webkit-scrollbar-track {
-        background: #f0f0f0 !important;
-        border-radius: 5px !important;
-    }
-
-    .stTabs::-webkit-scrollbar-thumb,
-    [data-testid="stTabs"]::-webkit-scrollbar-thumb {
-        background: #1f77b4 !important;
-        border-radius: 5px !important;
-    }
-
-    .stTabs::-webkit-scrollbar-thumb:hover,
-    [data-testid="stTabs"]::-webkit-scrollbar-thumb:hover {
-        background: #1565c0 !important;
-    }
 </style>
+
+<script>
+// Força scroll nas tabs após carregamento - v6.0
+(function() {
+    function enableTabScroll() {
+        // Encontra todos os possíveis seletores de tab-list
+        const selectors = [
+            '[data-baseweb="tab-list"]',
+            '[role="tablist"]'
+        ];
+
+        selectors.forEach(selector => {
+            const tabLists = document.querySelectorAll(selector);
+            tabLists.forEach(tabList => {
+                // Força propriedades de scroll via JavaScript
+                tabList.style.overflowX = 'auto';
+                tabList.style.overflowY = 'hidden';
+                tabList.style.display = 'flex';
+                tabList.style.flexWrap = 'nowrap';
+                tabList.style.whiteSpace = 'nowrap';
+                tabList.style.width = '100%';
+
+                console.log('✅ Scroll habilitado em:', selector, tabList);
+            });
+        });
+    }
+
+    // Executa imediatamente
+    enableTabScroll();
+
+    // Executa novamente após 100ms (caso Streamlit re-renderize)
+    setTimeout(enableTabScroll, 100);
+
+    // Executa ao detectar mudanças no DOM
+    const observer = new MutationObserver(enableTabScroll);
+    observer.observe(document.body, { childList: true, subtree: true });
+})();
+</script>
 """, unsafe_allow_html=True)  # unsafe_allow_html=True permite usar HTML/CSS puro
 
 # ═══════════════════════════════════════════════════════════════════════
